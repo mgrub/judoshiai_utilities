@@ -1,0 +1,9 @@
+SELECT category, number, blue_points, white_points
+FROM "main"."matches" 
+WHERE category == 10017 ;
+
+
+
+UPDATE "main"."matches" 
+SET blue_points = 7, white_points = 0
+WHERE ( category == 10017 AND number == 1);
