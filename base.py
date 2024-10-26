@@ -1,8 +1,14 @@
 import flet as ft
+from dbutils import JudoShiaiConnector
 
 
 class MatchApp:
     def __init__(self, page: ft.Page, config_file="./config.json"):
+
+        # DB connector
+        self.db = JudoShiaiConnector(
+            db_path="/home/maxwell/Desktop/judoshiai_test/tournament.shi"
+        )
 
         # init
         self.page = page
@@ -24,7 +30,7 @@ class MatchApp:
         ]
 
         self.appbar = ft.AppBar(
-            leading=ft.Icon(ft.icons.QUIZ),
+            leading=ft.Icon(ft.icons.CLOUD),
             leading_width=100,
             title=ft.Text(self.page.title, size=20, text_align="start"),
             center_title=False,
@@ -66,24 +72,32 @@ class MatchApp:
     def set_overview_view(self):
         self.solution_found = []
 
-        # create rows
-        rows = [
-            ft.ElevatedButton(
-                text="Category",
-                icon=ft.icons.CATEGORY,
-                on_click=self.open_category(10000),
+        categories = self.db.get_categories()
+
+        columns = []
+
+        for cat in categories:
+            is_finished = self.check_status(cat)
+            color = ft.colors.LIGHT_GREEN_300 if is_finished else ft.colors.GREY_300
+            item = ft.Container(
+                content=ft.Text(cat[1], size=30),
+                col={"sm": 6, "md": 4, "xl": 2},
+                on_click=self.open_category(cat[0]),
+                margin=10,
+                padding=10,
+                alignment=ft.alignment.center,
+                bgcolor=color,
+                width=200,
+                height=80,
+                border_radius=10,
             )
-        ]
 
-        # create grid
-        char_grid = ft.Row(
-            [
-                ft.Column(rows, expand=True),
-            ],
-            scroll=ft.ScrollMode.AUTO,
-        )
+            columns.append(item)
 
-        view_elements = [self.appbar, char_grid]
+        # create rows
+        resprows = ft.ResponsiveRow(columns)
+
+        view_elements = [self.appbar, resprows]
 
         view = ft.View(
             "/",
@@ -93,20 +107,85 @@ class MatchApp:
         )
         self.page.views.append(view)
 
+    def check_status(self, cat):
+        numcomp = cat[2]
+        pos = cat[3 : 3 + numcomp]
+
+        is_finished = False if 0 in pos else True
+
+        return is_finished
+
     def set_category_view(self, cid):
+
+        matches = self.db.get_matches(cid)
+        cat_info = self.db.get_category_info(cid)
+        rows = []
+
+        for match in matches:
+            mi = self.match_item(match)
+            rows.append(mi)
+
+        back_button = ft.ElevatedButton(
+            text="Back", icon=ft.icons.ARROW_BACK, on_click=self.open_home
+        )
 
         view = ft.View(
             f"/category/{cid}",
             [
                 self.appbar,
-                ft.Text(f"{cid}", size=30, weight=ft.FontWeight.BOLD),
-                ft.ElevatedButton(
-                    text="Back", icon=ft.icons.ARROW_BACK, on_click=self.open_home
-                ),
+                back_button,
+                ft.Text(cat_info[0], size=40),
+                *rows,
+                back_button,
             ],
             scroll=ft.ScrollMode.AUTO,
         )
         self.page.views.append(view)
+
+    def match_item(self, match):
+        cat_id = match[0]
+        match_number = match[1]
+        match_info = self.db.get_match_info(cat_id, match_number)
+
+        blue_info = self.db.get_competitor_info(match_info[0])
+        blue_box = self.competitor_box(blue_info, color=ft.colors.BLUE_300)
+
+        white_info = self.db.get_competitor_info(match_info[1])
+        white_box = self.competitor_box(white_info, color=ft.colors.WHITE)
+
+        content = [
+            ft.Text(match[1]),
+            white_box,
+            ft.Text("..."),
+            blue_box,
+        ]
+
+        item = ft.Row(controls=content)
+
+        return item
+
+    def competitor_box(self, info, color=ft.colors.BLUE_300):
+        if len(info):
+            name = f"{info[0][1]} {info[0][0]}"
+            club = f"({info[0][2]})"
+        else:
+            name = "-----"
+            club = ""
+        
+        box = ft.Container(
+                content=ft.Column([ft.Text(name, size=30), ft.Text(club, size=15)]),
+                border=ft.border.all(1, ft.colors.GREY_300),
+                margin=10,
+                padding=10,
+                alignment=ft.alignment.center_left,
+                bgcolor=color,
+                
+                width=500,
+                height=100,
+                border_radius=10,
+            )
+
+        return box
 
     def set_about_view(self):
         view = ft.View(
@@ -127,39 +206,12 @@ class MatchApp:
     def set_settings_view(self):
         button_reset = ft.ElevatedButton(
             text="Reset user data",
-            on_click=self.init_user_storage,
+            # on_click=self.init_user_storage,
             icon=ft.icons.RESTART_ALT,
         )
         view_elements = [self.appbar, button_reset]
         view = ft.View("/settings", view_elements)
         self.page.views.append(view)
-
-    def description_box(self, content=""):
-        c = ft.Container(
-            content=ft.Text(content, weight=ft.FontWeight.BOLD),
-            margin=0,
-            padding=0,
-            alignment=ft.alignment.center,
-            bgcolor=ft.colors.with_opacity(0.0, ft.colors.WHITE),
-            opacity=100,
-            width=5 * self.char_box_size,
-            height=self.char_box_size,
-        )
-        return c
-
-    def good_box(self, char: str = "A"):
-        c = ft.Container(
-            content=ft.Text(char, size=25),
-            margin=0,
-            padding=0,
-            alignment=ft.alignment.center,
-            bgcolor=ft.colors.GREEN_100,
-            width=self.char_box_size,
-            height=self.char_box_size,
-            border=ft.border.all(2, ft.colors.GREEN_200),
-            border_radius=8,
-        )
-        return c
 
     def view_pop(self, e):
         print("View pop:", e.view)
@@ -172,14 +224,6 @@ class MatchApp:
             self.page.go(f"/category/{cid}")
 
         return open_cid
-
-    def store_answer(self, qid):
-        print(qid)
-
-        def store_answer_qid(e):
-            self.page.client_storage.set(qid, e.control.value)
-
-        return store_answer_qid
 
     def open_home(self, e):
         self.page.go("/")
