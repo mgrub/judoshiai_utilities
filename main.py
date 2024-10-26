@@ -10,5 +10,4 @@ def main(page: ft.Page):
     page.go(page.route)
 
 
-if __name__ == "__main__":
-    ft.app(target=main, view=ftc.types.WebRenderer)
+ft.app(main)
