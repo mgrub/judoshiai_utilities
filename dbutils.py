@@ -37,6 +37,30 @@ class JudoShiaiConnector:
         WHERE deleted == 0 ;
         """
         return self.select_cmd(cmd)
+    
+    def get_category_info(self, cid):
+        cmd = f"""
+        SELECT category, numcomp, pos1, pos2, pos3, pos4
+        FROM "main"."categories"
+        WHERE "index" == {cid} ;
+        """
+        return self.select_cmd(cmd)[0]
+
+    def get_match_info(self, cid, mid):
+        cmd = f"""
+        SELECT blue, white, blue_points, white_points
+        FROM "main"."matches"
+        WHERE "category" == {cid} AND "number" == {mid} ;
+        """
+        return self.select_cmd(cmd)[0]
+
+    def get_competitor_info(self, cid):
+        cmd = f"""
+        SELECT last, first, club, birthyear, country
+        FROM "main"."competitors"
+        WHERE "index" == {cid} ;
+        """
+        return self.select_cmd(cmd)
 
     def get_matches(self, category_id):
         cmd = f"""
@@ -53,7 +77,6 @@ class JudoShiaiConnector:
             WHERE ( category == {category_id} AND number == {match_id});
         """
         return self.update_cmd(cmd)
-
 
 
 
