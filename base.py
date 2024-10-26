@@ -149,18 +149,28 @@ class MatchApp:
 
         blue_info = self.db.get_competitor_info(match_info[0])
         blue_box = self.competitor_box(blue_info, color=ft.colors.BLUE_300)
+        blue_points = self.match_result_radiogroup(cat_id, match_number, match_info, is_blue=True)
 
         white_info = self.db.get_competitor_info(match_info[1])
         white_box = self.competitor_box(white_info, color=ft.colors.WHITE)
+        white_points = self.match_result_radiogroup(cat_id, match_number, match_info, is_blue=False)
 
         content = [
-            ft.Text(match[1]),
-            white_box,
-            ft.Text("..."),
-            blue_box,
+            ft.Container(
+                content=ft.Text(match[1], size=22),
+                col={"sm": 12, "md": 1, "xxl": 0.5},
+            ),
+            ft.Container(
+                content=ft.Row([white_box, white_points]),
+                col={"sm": 12, "md": 10, "xxl": 5},
+            ),
+            ft.Container(
+                content=ft.Row([blue_box, blue_points]),
+                col={"sm": 12, "md": 10, "xxl": 5},
+            ),
         ]
 
-        item = ft.Row(controls=content)
+        item = ft.ResponsiveRow(controls=content, alignment=ft.MainAxisAlignment.END)
 
         return item
 
@@ -171,21 +181,60 @@ class MatchApp:
         else:
             name = "-----"
             club = ""
-        
+
         box = ft.Container(
-                content=ft.Column([ft.Text(name, size=30), ft.Text(club, size=15)]),
-                border=ft.border.all(1, ft.colors.GREY_300),
-                margin=10,
-                padding=10,
-                alignment=ft.alignment.center_left,
-                bgcolor=color,
-                
-                width=500,
-                height=100,
-                border_radius=10,
-            )
+            content=ft.Column([ft.Text(name, size=30), ft.Text(club, size=22)]),
+            border=ft.border.all(1, ft.colors.GREY_300),
+            margin=10,
+            padding=10,
+            alignment=ft.alignment.center_left,
+            bgcolor=color,
+            height=100,
+            border_radius=10,
+            expand=3,
+        )
 
         return box
+
+    def match_result_radiogroup(self, cat_id, match_number, match_info, is_blue=True):
+
+        if is_blue:
+            init_value = match_info[2]
+        else:
+            init_value = match_info[3]
+        
+        on_change = self.update_points(cat_id, match_number, is_blue)
+
+        radio_group = ft.RadioGroup(
+            ft.Row(
+                [
+                    ft.Column(
+                        [ft.Text("0"), ft.Radio(value="0", label="")],
+                        alignment=ft.alignment.center,
+                    ),
+                    ft.Column(
+                        [ft.Text("1"), ft.Radio(value="1", label="")],
+                        alignment=ft.alignment.center,
+                    ),
+                    ft.Column(
+                        [ft.Text("7"), ft.Radio(value="7", label="")],
+                        alignment=ft.alignment.center,
+                    ),
+                    ft.Column(
+                        [ft.Text("10"), ft.Radio(value="10", label="")],
+                        alignment=ft.alignment.center,
+                    ),
+                ]
+            ),
+            value=init_value,
+            on_change=on_change,
+        )
+
+        radio_container = ft.Container(
+            content=radio_group,
+            expand=1,
+        )
+        return radio_container
 
     def set_about_view(self):
         view = ft.View(
@@ -224,6 +273,17 @@ class MatchApp:
             self.page.go(f"/category/{cid}")
 
         return open_cid
+
+    def update_points(self, category_id, match_id, is_blue):
+        def update_db_points(e):
+            winner_points = e.control.value
+            if is_blue:
+                self.db.set_match_blue(category_id, match_id, winner_points)
+            else:
+                self.db.set_match_white(category_id, match_id, winner_points)
+            #e.page.update()
+
+        return update_db_points
 
     def open_home(self, e):
         self.page.go("/")

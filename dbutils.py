@@ -78,6 +78,21 @@ class JudoShiaiConnector:
         """
         return self.update_cmd(cmd)
 
+    def set_match_blue(self, category_id, match_id, blue=0):
+        cmd = f"""
+            UPDATE "main"."matches" 
+            SET blue_points = {blue}
+            WHERE ( category == {category_id} AND number == {match_id});
+        """
+        return self.update_cmd(cmd)
+
+    def set_match_white(self, category_id, match_id, white=0):
+        cmd = f"""
+            UPDATE "main"."matches" 
+            SET white_points = {white}
+            WHERE ( category == {category_id} AND number == {match_id});
+        """
+        return self.update_cmd(cmd)
 
 
 
