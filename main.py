@@ -6,7 +6,7 @@ from base import MatchApp
 
 def main(page: ft.Page):
     print("Initial route:", page.route)
-    quiz = MatchApp(page)
+    app = MatchApp(page)
     page.go(page.route)
 
 
