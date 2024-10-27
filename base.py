@@ -200,25 +200,37 @@ class MatchApp:
 
         blue_info = self.db.get_competitor_info(match_info[0])
         blue_box = self.competitor_box(blue_info, color=ft.colors.BLUE_300)
-        blue_points = self.match_result_radiogroup(cat_id, match_number, match_info, is_blue=True)
+        blue_points = self.match_result_radiogroup(
+            cat_id, match_number, match_info, is_blue=True
+        )
 
         white_info = self.db.get_competitor_info(match_info[1])
         white_box = self.competitor_box(white_info, color=ft.colors.WHITE)
-        white_points = self.match_result_radiogroup(cat_id, match_number, match_info, is_blue=False)
+        white_points = self.match_result_radiogroup(
+            cat_id, match_number, match_info, is_blue=False
+        )
+
+        opacity = 1.0
+        if blue_info[0] == "empty" or white_info[0] == "empty":
+            opacity = 0.3
 
         content = [
             ft.Container(
                 content=ft.Text(match[1], size=22),
                 col={"sm": 12, "md": 1, "xxl": 0.5},
+                opacity=opacity,
             ),
             ft.Container(
                 content=ft.Row([white_box, white_points]),
                 col={"sm": 12, "md": 10, "xxl": 5},
+                opacity=opacity,
             ),
             ft.Container(
                 content=ft.Row([blue_box, blue_points]),
                 col={"sm": 12, "md": 10, "xxl": 5},
+                opacity=opacity,
             ),
+            ft.Divider(),
         ]
 
         item = ft.ResponsiveRow(controls=content, alignment=ft.MainAxisAlignment.END)
@@ -226,12 +238,9 @@ class MatchApp:
         return item
 
     def competitor_box(self, info, color=ft.colors.BLUE_300):
-        if len(info):
-            name = f"{info[0][1]} {info[0][0]}"
-            club = f"({info[0][2]})"
-        else:
-            name = "-----"
-            club = ""
+
+        name = f"{info[1]} {info[0]}"
+        club = f"({info[2]})"
 
         box = ft.Container(
             content=ft.Column([ft.Text(name, size=30), ft.Text(club, size=22)]),
@@ -253,7 +262,7 @@ class MatchApp:
             init_value = match_info[2]
         else:
             init_value = match_info[3]
-        
+
         on_change = self.update_points(cat_id, match_number, is_blue)
 
         radio_group = ft.RadioGroup(
@@ -294,6 +303,6 @@ class MatchApp:
                 self.db.set_match_blue(category_id, match_id, winner_points)
             else:
                 self.db.set_match_white(category_id, match_id, winner_points)
-            #e.page.update()
+            # e.page.update()
 
         return update_db_points

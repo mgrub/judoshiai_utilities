@@ -60,7 +60,12 @@ class JudoShiaiConnector:
         FROM "main"."competitors"
         WHERE "index" == {cid} ;
         """
-        return self.select_cmd(cmd)
+        if cid == 0:
+            return ["unknown", "", "", "", ""]
+        elif cid == 1:
+            return ["empty", "", "", "", ""]
+        else:
+            return self.select_cmd(cmd)[0]
 
     def get_matches(self, category_id):
         cmd = f"""
