@@ -142,6 +142,57 @@ class MatchApp:
         )
         self.page.views.append(view)
 
+    def set_about_view(self):
+        view = ft.View(
+            "/about",
+            [
+                self.appbar,
+                ft.Text(
+                    size=30,
+                    spans=[
+                        ft.TextSpan("SV Luftfahrt Berlin e.V.\n"),
+                        ft.TextSpan("Maximilian Gruber"),
+                    ],
+                ),
+            ],
+        )
+        self.page.views.append(view)
+
+    def set_settings_view(self):
+        button_reset = ft.ElevatedButton(
+            text="Reset user data",
+            # on_click=self.init_user_storage,
+            icon=ft.icons.RESTART_ALT,
+        )
+        view_elements = [self.appbar, button_reset]
+        view = ft.View("/settings", view_elements)
+        self.page.views.append(view)
+
+    def view_pop(self, e):
+        print("View pop:", e.view)
+        self.page.views.pop()
+        top_view = self.page.views[-1]
+        self.page.go(top_view.route)
+
+    def open_category(self, cid):
+        def open_cid(e):
+            self.page.go(f"/category/{cid}")
+
+        return open_cid
+
+    def open_home(self, e):
+        self.page.go("/")
+
+    def open_about(self, e):
+        self.page.go("/about")
+
+    def open_settings(self, e):
+        self.page.go("/settings")
+
+    def row_container_hover(self, e):
+        e.control.bgcolor = ft.colors.LIGHT_BLUE_50 if e.data == "true" else ""
+        e.control.update()
+
     def match_item(self, match):
         cat_id = match[0]
         match_number = match[1]
@@ -236,44 +287,6 @@ class MatchApp:
         )
         return radio_container
 
-    def set_about_view(self):
-        view = ft.View(
-            "/about",
-            [
-                self.appbar,
-                ft.Text(
-                    size=30,
-                    spans=[
-                        ft.TextSpan("SV Luftfahrt Berlin e.V.\n"),
-                        ft.TextSpan("Maximilian Gruber"),
-                    ],
-                ),
-            ],
-        )
-        self.page.views.append(view)
-
-    def set_settings_view(self):
-        button_reset = ft.ElevatedButton(
-            text="Reset user data",
-            # on_click=self.init_user_storage,
-            icon=ft.icons.RESTART_ALT,
-        )
-        view_elements = [self.appbar, button_reset]
-        view = ft.View("/settings", view_elements)
-        self.page.views.append(view)
-
-    def view_pop(self, e):
-        print("View pop:", e.view)
-        self.page.views.pop()
-        top_view = self.page.views[-1]
-        self.page.go(top_view.route)
-
-    def open_category(self, cid):
-        def open_cid(e):
-            self.page.go(f"/category/{cid}")
-
-        return open_cid
-
     def update_points(self, category_id, match_id, is_blue):
         def update_db_points(e):
             winner_points = e.control.value
@@ -284,16 +297,3 @@ class MatchApp:
             #e.page.update()
 
         return update_db_points
-
-    def open_home(self, e):
-        self.page.go("/")
-
-    def open_about(self, e):
-        self.page.go("/about")
-
-    def open_settings(self, e):
-        self.page.go("/settings")
-
-    def row_container_hover(self, e):
-        e.control.bgcolor = ft.colors.LIGHT_BLUE_50 if e.data == "true" else ""
-        e.control.update()
