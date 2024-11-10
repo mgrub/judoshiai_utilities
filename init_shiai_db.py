@@ -52,9 +52,10 @@ shi_path = os.path.join(output_directory, f"{args.name}.shi")
 
 # stop if file already existing
 if os.path.exists(shi_path):
-    raise FileExistsError(
-        f"Target path <{shi_path}> already exists. \nPlease rename or delete to proceed."
+    print(
+        f"\nTarget path <{shi_path}> already exists.\nPlease rename or delete to proceed.\n"
     )
+    exit()
 
 # copy template
 shutil.copy(template, shi_path)
