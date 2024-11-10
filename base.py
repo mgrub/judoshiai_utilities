@@ -7,7 +7,7 @@ class MatchApp:
 
         # DB connector
         self.db = JudoShiaiConnector(
-            db_path="/home/maxwell/Desktop/judoshiai_test/tournament.shi"
+            db_path="/home/maxwell/Desktop/judoshiai_test/MASTERS_2023_TEST/competition.shi"
         )
 
         # init
