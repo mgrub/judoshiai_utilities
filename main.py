@@ -21,7 +21,7 @@ parser.add_argument(
     "-f",
     "--file",
     default=default_db,
-    help="shi-file to use work on",
+    help="shi-file to use",
 )
 
 # parse CLI arguments
