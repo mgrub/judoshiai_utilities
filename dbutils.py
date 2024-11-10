@@ -20,7 +20,7 @@ class JudoShiaiConnector:
 
         return res_list
 
-    def update_cmd(self, cmd):
+    def update_or_insert_cmd(self, cmd):
         # generic command to update values in DB
         con = sql.connect(self.db_path)
         cur = con.cursor()
@@ -81,7 +81,7 @@ class JudoShiaiConnector:
             SET blue_points = {blue}, white_points = {white}
             WHERE ( category == {category_id} AND number == {match_id});
         """
-        return self.update_cmd(cmd)
+        return self.update_or_insert_cmd(cmd)
 
     def set_match_blue(self, category_id, match_id, blue=0):
         cmd = f"""
@@ -89,7 +89,7 @@ class JudoShiaiConnector:
             SET blue_points = {blue}
             WHERE ( category == {category_id} AND number == {match_id});
         """
-        return self.update_cmd(cmd)
+        return self.update_or_insert_cmd(cmd)
 
     def set_match_white(self, category_id, match_id, white=0):
         cmd = f"""
@@ -97,8 +97,38 @@ class JudoShiaiConnector:
             SET white_points = {white}
             WHERE ( category == {category_id} AND number == {match_id});
         """
-        return self.update_cmd(cmd)
+        return self.update_or_insert_cmd(cmd)
 
+    def get_category_definitions(self):
+        cmd = """
+        SELECT agetext, weighttext
+        FROM "main"."catdef" ;
+        """
+        return self.select_cmd(cmd)
+    
+    def insert_category(self, cat_name, ix=0):
+        cmd = f"""
+            INSERT INTO "main"."categories" ("index", "category", "tatami", "deleted", "group", "system", "numcomp", "table", "wishsys", "pos1", "pos2", "pos3", "pos4", "pos5", "pos6", "pos7", "pos8", "color") 
+            VALUES ('{ix}', '{cat_name}', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '');
+        """
+        return self.update_or_insert_cmd(cmd)
+
+    def insert_competitor(self, index, last, first, birthyear, belt, club, regcategory, weight, visible, category, deleted, country, id, seeding, clubseeding, comment, coachid):
+
+        cmd = f"""
+            INSERT INTO "main"."competitors" ("index", "last", "first", "birthyear", "belt", "club", "regcategory", "weight", "visible", "category", "deleted", "country", "id", "seeding", "clubseeding", "comment", "coachid")
+            VALUES ('{index}', '{last}', '{first}', '{birthyear}', '{belt}', '{club}', '{regcategory}', '{weight}', '{visible}', '{category}', '{deleted}', '{country}', '{id}', '{seeding}', '{clubseeding}', '{comment}', '{coachid}');
+        """
+        return self.update_or_insert_cmd(cmd)
+
+
+    def insert_competitor_ooooo(self, **kwargs):
+
+        cmd = f"""
+            INSERT INTO "main"."competitors" ("index", "last", "first", "birthyear", "belt", "club", "regcategory", "weight", "visible", "category", "deleted", "country", "id", "seeding", "clubseeding", "comment", "coachid")
+            VALUES ('{kwargs["index"]}', '{kwargs["last"]}', '{kwargs["first"]}', '{kwargs["birthyear"]}', '{kwargs["belt"]}', '{kwargs["club"]}', '{kwargs["regcategory"]}', '{kwargs["weight"]}', '{kwargs["visible"]}', '{kwargs["category"]}', '{kwargs["deleted"]}', '{kwargs["country"]}', '{kwargs["id"]}', '{kwargs["seeding"]}', '{kwargs["clubseeding"]}', '{kwargs["comment"]}', '{kwargs["coachid"]}');
+        """
+        return self.update_or_insert_cmd(cmd)
 
 
 if __name__ == "__main__":
