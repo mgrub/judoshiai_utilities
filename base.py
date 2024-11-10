@@ -3,12 +3,10 @@ from dbutils import JudoShiaiConnector
 
 
 class MatchApp:
-    def __init__(self, page: ft.Page, config_file="./config.json"):
+    def __init__(self, page: ft.Page, db_path="competition.shi"):
 
         # DB connector
-        self.db = JudoShiaiConnector(
-            db_path="/home/maxwell/Desktop/judoshiai_test/MASTERS_2023_TEST/competition.shi"
-        )
+        self.db = JudoShiaiConnector(db_path)
 
         # init
         self.page = page
