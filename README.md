@@ -2,11 +2,24 @@
 
 ## Database initialisation
 
-todo
+The script has a command line interface.
+In the working directory:
+
+```shell
+python ~/git_repos/judoshiai_utilities/init_shiai_db.py \ 
+ --template ~/Desktop/judoshiai_test/masters_template.shi  \ 
+ --competitors ~/Desktop/judoshiai_test/MASTERS_2023_TEST/Meldungen_2023.xlsx \ 
+ --name "masters_2023"
+```
 
 ## Competition result GUI
 
-todo
+The script has a command line interface.
+In the working directory:
+
+```shell
+python ~/git_repos/judoshiai_utilities/main.py --file masters_2023.shi
+```
 
 ## Aggregate results
 
