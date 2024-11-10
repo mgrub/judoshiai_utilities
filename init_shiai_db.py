@@ -50,6 +50,12 @@ competitors_xlsx = args.competitors
 competitors_json = os.path.join(output_directory, f"competitors_{args.name}.json")
 shi_path = os.path.join(output_directory, f"{args.name}.shi")
 
+# stop if file already existing
+if os.path.exists(shi_path):
+    raise FileExistsError(
+        f"Target path <{shi_path}> already exists. \nPlease rename or delete to proceed."
+    )
+
 # copy template
 shutil.copy(template, shi_path)
 
