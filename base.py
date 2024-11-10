@@ -109,7 +109,10 @@ class MatchApp:
         numcomp = cat[2]
         pos = cat[3 : 3 + numcomp]
 
-        is_finished = False if 0 in pos else True
+        if numcomp > 0:
+            is_finished = False if 0 in pos else True
+        else:
+            is_finished = False
 
         return is_finished
 
