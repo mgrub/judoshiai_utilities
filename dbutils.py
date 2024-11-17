@@ -1,6 +1,7 @@
 import sqlite3 as sql
 import requests
 import json
+import websocket
 
 
 # only use for offline use, recommended to use WEB-connector during runtime
@@ -74,15 +75,18 @@ class JudoShiaiConnector_SQLITE:
 # only useable when JudoShiai is running
 class JudoShiaiConnector_WEB:
 
-    def __init__(self, host="localhost", port=8088):
+    def __init__(self, host="localhost"):
         self.host = host
-        self.port = port
+        self.port = 8088
+        self.port_ws = 2315
 
     def select_cmd(self, cmd):
         # curl -X POST -H 'Content-Type: application/json' -d '{"op": "sql", "pw": "PASSWD", "cmd":"SELECT agetext, weighttext FROM main.catdef"}' http://localhost:8088/json
         url = f"http://{self.host}:{self.port}/json"
         headers = {"Content-Type": "application/json; charset=utf-8"}
         json_data = {"op": "sql", "pw": "PASSWD", "cmd": cmd}
+        
+        print(" ".join([l.strip() for l in cmd.split("\n")]))
 
         response = requests.post(url, headers=headers, json=json_data)
         response.encoding = "utf-8"
@@ -123,9 +127,10 @@ class JudoShiaiConnector_WEB:
         FROM "main"."competitors"
         WHERE "index" == {cid} ;
         """
-        if cid == 0:
+        
+        if cid == "0":
             return ["unknown", "", "", "", ""]
-        elif cid == 1:
+        elif cid == "1":
             return ["empty", "", "", "", ""]
         else:
             return self.select_cmd(cmd)[0]
@@ -139,38 +144,51 @@ class JudoShiaiConnector_WEB:
         return self.select_cmd(cmd)
 
     def set_match_result(self, category_id, match_id, blue_score, white_score):
-        cmd = f"""
-            UPDATE "main"."matches" 
-            SET blue_points = {blue}, white_points = {white}
-            WHERE ( category == {category_id} AND number == {match_id});
-        """
-        return self.update_or_insert_cmd(cmd)
+        
+        msg = {
+            "msg": [
+                5,                 # src_ip_addr, is mostly "5"
+                2,                 # type MSG_RESULT
+                1,                 # sender
+                7777,              # begin sublist ???
+                0,                 # int tatami
+                int(category_id),  # int category
+                int(match_id),     # int match
+                0,                 # int minutes
+                int(blue_score),   # int blue_score (long int of hex IWYKS)
+                int(white_score),  # int white_score (long int of hex IWYKS)
+                0,                 # char blue_vote
+                0,                 # char white_vote
+                0,                 # char blue_hansokumake
+                0,                 # char white_hansokumake
+                0,                 # int legend
+                0,                 # end sublist ???
+            ]
+        }
 
-    def set_match_blue(self, category_id, match_id, blue=0):
-        cmd = f"""
-            UPDATE "main"."matches" 
-            SET blue_points = {blue}
-            WHERE ( category == {category_id} AND number == {match_id});
-        """
-        return self.update_or_insert_cmd(cmd)
+        msg_json = json.dumps(msg)
+        print(msg)
 
-    def set_match_white(self, category_id, match_id, white=0):
-        cmd = f"""
-            UPDATE "main"."matches" 
-            SET white_points = {white}
-            WHERE ( category == {category_id} AND number == {match_id});
-        """
-        return self.update_or_insert_cmd(cmd)
+        ws = websocket.WebSocket()
+        ws.connect(f"ws://{self.host}:{self.port_ws}")
+        ws.send(msg_json)
+
+        msg_ack = json.loads(ws.recv())
+        if msg_ack["msg"][1] != 3:
+            print(msg_ack)
+            raise Warning("Did not receive MSG_ACK.")
+        ws.close()
 
 
 if __name__ == "__main__":
 
-    jsc_offline = JudoShiaiConnector_SQLITE(
-        db_path="/home/maxwell/Desktop/judoshiai_test/tournament.shi"
-    )
-    print(jsc_offline.get_category_definitions())
+    #jsc_offline = JudoShiaiConnector_SQLITE(
+    #    db_path="/home/maxwell/Desktop/judoshiai_test/tournament.shi"
+    #)
+    #print(jsc_offline.get_category_definitions())
 
     jsc_online = JudoShiaiConnector_WEB()
     print(jsc_online.get_categories())
-    print(jsc_online.get_matches(10014))
-    print(jsc_online.get_competitor_info(29))
+    #print(jsc_online.get_matches(10014))
+    #print(jsc_online.get_competitor_info(29))
+    jsc_online.set_match_result(10014, 1, 0x10000, 0x01000) 

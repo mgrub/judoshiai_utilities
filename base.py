@@ -3,10 +3,10 @@ from dbutils import JudoShiaiConnector_WEB
 
 
 class MatchApp:
-    def __init__(self, page: ft.Page, host="localhost", port=8088):
+    def __init__(self, page: ft.Page, host="localhost"):
 
         # DB connector
-        self.jsc = JudoShiaiConnector_WEB(host, port)
+        self.jsc = JudoShiaiConnector_WEB(host)
 
         # init
         self.page = page
@@ -130,11 +130,16 @@ class MatchApp:
             text="Back", icon=ft.icons.ARROW_BACK, on_click=self.open_home
         )
 
+        refresh_button = ft.ElevatedButton(
+            text="Refresh", icon=ft.icons.REFRESH, on_click=self.page.update() # self.open_category(cid)
+        )
+
         view = ft.View(
             f"/category/{cid}",
             [
                 self.appbar,
                 back_button,
+                refresh_button,
                 ft.Text(cat_info[0], size=40),
                 *rows,
                 back_button,
@@ -260,9 +265,9 @@ class MatchApp:
     def match_result_radiogroup(self, cat_id, match_number, match_info, is_blue=True):
 
         if is_blue:
-            init_value = match_info[2]
+            init_value = self.convert_and_simplify_score(match_info[2])
         else:
-            init_value = match_info[3]
+            init_value = self.convert_and_simplify_score(match_info[3])
 
         on_change = self.update_points(cat_id, match_number, is_blue)
 
@@ -270,19 +275,19 @@ class MatchApp:
             ft.Row(
                 [
                     ft.Column(
-                        [ft.Text("0"), ft.Radio(value="0", label="")],
+                        [ft.Text("0"), ft.Radio(value=0x00000, label="")],
                         alignment=ft.alignment.center,
                     ),
                     ft.Column(
-                        [ft.Text("1"), ft.Radio(value="1", label="")],
+                        [ft.Text("1"), ft.Radio(value=0x00010, label="")],
                         alignment=ft.alignment.center,
                     ),
                     ft.Column(
-                        [ft.Text("7"), ft.Radio(value="7", label="")],
+                        [ft.Text("7"), ft.Radio(value=0x01000, label="")],
                         alignment=ft.alignment.center,
                     ),
                     ft.Column(
-                        [ft.Text("10"), ft.Radio(value="10", label="")],
+                        [ft.Text("10"), ft.Radio(value=0x10000, label="")],
                         alignment=ft.alignment.center,
                     ),
                 ]
@@ -297,13 +302,24 @@ class MatchApp:
         )
         return radio_container
 
+    def convert_and_simplify_score(self, score_raw):
+        score = int(score_raw)
+        if score == 10:
+            return 0x10000
+        elif score == 7:
+            return 0x01000
+        elif score == 1:
+            return 0x00010
+        else:
+            return 0x00000
+
     def update_points(self, category_id, match_id, is_blue):
         def update_db_points(e):
-            winner_points = e.control.value
+            winner_score = e.control.value
             if is_blue:
-                self.jsc.set_match_blue(category_id, match_id, winner_points)
+                self.jsc.set_match_result(category_id, match_id, blue_score=winner_score, white_score=0x0)
             else:
-                self.jsc.set_match_white(category_id, match_id, winner_points)
+                self.jsc.set_match_result(category_id, match_id, blue_score=0x0, white_score=winner_score)
             # e.page.update()
 
         return update_db_points
