@@ -1,12 +1,12 @@
 import flet as ft
-from dbutils import JudoShiaiConnector
+from dbutils import JudoShiaiConnector_WEB
 
 
 class MatchApp:
-    def __init__(self, page: ft.Page, db_path="competition.shi"):
+    def __init__(self, page: ft.Page, host="localhost", port=8088):
 
         # DB connector
-        self.db = JudoShiaiConnector(db_path)
+        self.jsc = JudoShiaiConnector_WEB(host, port)
 
         # init
         self.page = page
@@ -70,7 +70,7 @@ class MatchApp:
     def set_overview_view(self):
         self.solution_found = []
 
-        categories = self.db.get_categories()
+        categories = self.jsc.get_categories()
 
         columns = []
 
@@ -106,7 +106,7 @@ class MatchApp:
         self.page.views.append(view)
 
     def check_status(self, cat):
-        numcomp = cat[2]
+        numcomp = int(cat[2])
         pos = cat[3 : 3 + numcomp]
 
         if numcomp > 0:
@@ -118,8 +118,8 @@ class MatchApp:
 
     def set_category_view(self, cid):
 
-        matches = self.db.get_matches(cid)
-        cat_info = self.db.get_category_info(cid)
+        matches = self.jsc.get_matches(cid)
+        cat_info = self.jsc.get_category_info(cid)
         rows = []
 
         for match in matches:
@@ -197,15 +197,15 @@ class MatchApp:
     def match_item(self, match):
         cat_id = match[0]
         match_number = match[1]
-        match_info = self.db.get_match_info(cat_id, match_number)
+        match_info = self.jsc.get_match_info(cat_id, match_number)
 
-        blue_info = self.db.get_competitor_info(match_info[0])
+        blue_info = self.jsc.get_competitor_info(match_info[0])
         blue_box = self.competitor_box(blue_info, color=ft.colors.BLUE_300)
         blue_points = self.match_result_radiogroup(
             cat_id, match_number, match_info, is_blue=True
         )
 
-        white_info = self.db.get_competitor_info(match_info[1])
+        white_info = self.jsc.get_competitor_info(match_info[1])
         white_box = self.competitor_box(white_info, color=ft.colors.WHITE)
         white_points = self.match_result_radiogroup(
             cat_id, match_number, match_info, is_blue=False
@@ -301,9 +301,9 @@ class MatchApp:
         def update_db_points(e):
             winner_points = e.control.value
             if is_blue:
-                self.db.set_match_blue(category_id, match_id, winner_points)
+                self.jsc.set_match_blue(category_id, match_id, winner_points)
             else:
-                self.db.set_match_white(category_id, match_id, winner_points)
+                self.jsc.set_match_white(category_id, match_id, winner_points)
             # e.page.update()
 
         return update_db_points

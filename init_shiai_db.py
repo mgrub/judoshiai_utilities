@@ -2,7 +2,7 @@ import shutil
 import os
 import json
 import pandas
-from dbutils import JudoShiaiConnector
+from dbutils import JudoShiaiConnector_SQLITE
 import argparse
 
 # setup CLI
@@ -61,7 +61,7 @@ if os.path.exists(shi_path):
 shutil.copy(template, shi_path)
 
 # connect to shi file
-db = JudoShiaiConnector(db_path=shi_path)
+db = JudoShiaiConnector_SQLITE(db_path=shi_path)
 
 # init categories
 catdefs = db.get_category_definitions()

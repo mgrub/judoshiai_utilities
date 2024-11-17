@@ -9,7 +9,6 @@ from base import MatchApp
 # setup CLI
 # some defaults for argparse interface
 cwd = os.getcwd()
-default_db = os.path.join(cwd, "competition.shi")
 
 # argparse options
 parser = argparse.ArgumentParser(
@@ -18,18 +17,24 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument(
-    "-f",
-    "--file",
-    default=default_db,
-    help="shi-file to use",
+    "--host",
+    default="localhost",
+    help="IP/URL to JudoShiai-host",
+)
+
+parser.add_argument(
+    "--port",
+    default="8088",
+    help="Port of JudoShiai webservice",
 )
 
 # parse CLI arguments
 args = parser.parse_args()
 
+
 def main(page: ft.Page):
     print("Initial route:", page.route)
-    app = MatchApp(page, db_path=args.file)
+    app = MatchApp(page, host=args.host, port=args.port)
     page.go(page.route)
 
 
