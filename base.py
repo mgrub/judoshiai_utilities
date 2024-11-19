@@ -12,6 +12,10 @@ class MatchApp:
         self.page = page
         self.page.title = "JudoShiai Match Result GUI"
 
+        # cache
+        self.matches = {}
+        self.competitors = {}
+
         # layout and style
         self.page.theme_mode = ft.ThemeMode.LIGHT
         self.char_box_size = 35
@@ -76,7 +80,7 @@ class MatchApp:
 
         for cat in categories:
             is_finished = self.check_status(cat)
-            color = ft.colors.LIGHT_GREEN_300 if is_finished else ft.colors.GREY_300
+            color = ft.colors.LIGHT_BLUE_100 if is_finished else ft.colors.WHITE
             item = ft.Container(
                 content=ft.Text(cat[1], size=30),
                 col={"sm": 6, "md": 4, "xl": 2},
@@ -130,16 +134,11 @@ class MatchApp:
             text="Back", icon=ft.icons.ARROW_BACK, on_click=self.open_home
         )
 
-        refresh_button = ft.ElevatedButton(
-            text="Refresh", icon=ft.icons.REFRESH, on_click=self.page.update() # self.open_category(cid)
-        )
-
         view = ft.View(
             f"/category/{cid}",
             [
                 self.appbar,
                 back_button,
-                refresh_button,
                 ft.Text(cat_info[0], size=40),
                 *rows,
                 back_button,
@@ -167,7 +166,7 @@ class MatchApp:
     def set_settings_view(self):
         button_reset = ft.ElevatedButton(
             text="Reset user data",
-            # on_click=self.init_user_storage,
+            on_click=self.reset_cache,
             icon=ft.icons.RESTART_ALT,
         )
         view_elements = [self.appbar, button_reset]
@@ -199,18 +198,59 @@ class MatchApp:
         e.control.bgcolor = ft.colors.LIGHT_BLUE_50 if e.data == "true" else ""
         e.control.update()
 
-    def match_item(self, match):
+    def refresh_match_item(self, match):
         cat_id = match[0]
         match_number = match[1]
-        match_info = self.jsc.get_match_info(cat_id, match_number)
 
+        # retrieve match informations
+        match_info = self.jsc.get_match_info(cat_id, match_number)
+        if cat_id in self.matches.keys():
+            self.matches[cat_id][match_number] = match_info
+        else:
+            self.matches[cat_id] = {match_number: match_info}
+
+        # update info about competitor blue
         blue_info = self.jsc.get_competitor_info(match_info[0])
+        self.competitors[match_info[0]] = blue_info
+
+        # update info about competitor white
+        white_info = self.jsc.get_competitor_info(match_info[1])
+        self.competitors[match_info[1]] = white_info
+
+        return match_info, blue_info, white_info
+
+    def match_item(self, match):
+
+        cat_id = match[0]
+        match_number = match[1]
+
+        if (
+            cat_id in self.matches.keys()
+            and match_number in self.matches[cat_id].keys()
+        ):
+            match_info = self.matches[cat_id][match_number]
+            blue_info = self.competitors[match_info[0]]
+            white_info = self.competitors[match_info[1]]
+        else:
+            match_info, blue_info, white_info = self.refresh_match_item(match)
+
+        def refresh_callback(e):
+            match_info, blue_info, white_info = self.refresh_match_item(match)
+
+            blue_box.content.controls[0].value = f"{blue_info[1]} {blue_info[0]}"
+            blue_box.content.controls[1].value = f"({blue_info[2]})"
+
+            white_box.content.controls[0].value = f"{white_info[1]} {white_info[0]}"
+            white_box.content.controls[1].value = f"({white_info[2]})"
+
+            self.page.update()
+
+        refresh_button = ft.IconButton(icon=ft.icons.REFRESH, on_click=refresh_callback)
         blue_box = self.competitor_box(blue_info, color=ft.colors.BLUE_300)
         blue_points = self.match_result_radiogroup(
             cat_id, match_number, match_info, is_blue=True
         )
 
-        white_info = self.jsc.get_competitor_info(match_info[1])
         white_box = self.competitor_box(white_info, color=ft.colors.WHITE)
         white_points = self.match_result_radiogroup(
             cat_id, match_number, match_info, is_blue=False
@@ -222,7 +262,7 @@ class MatchApp:
 
         content = [
             ft.Container(
-                content=ft.Text(match[1], size=22),
+                content=ft.Column([ft.Text(match[1], size=22), refresh_button]),
                 col={"sm": 12, "md": 1, "xxl": 0.5},
                 opacity=opacity,
             ),
@@ -317,9 +357,17 @@ class MatchApp:
         def update_db_points(e):
             winner_score = e.control.value
             if is_blue:
-                self.jsc.set_match_result(category_id, match_id, blue_score=winner_score, white_score=0x0)
+                self.jsc.set_match_result(
+                    category_id, match_id, blue_score=winner_score, white_score=0x0
+                )
             else:
-                self.jsc.set_match_result(category_id, match_id, blue_score=0x0, white_score=winner_score)
+                self.jsc.set_match_result(
+                    category_id, match_id, blue_score=0x0, white_score=winner_score
+                )
             # e.page.update()
 
         return update_db_points
+
+    def reset_cache(self, e):
+        self.matches = {}
+        self.competitors = {}
