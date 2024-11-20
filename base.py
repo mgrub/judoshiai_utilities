@@ -235,6 +235,7 @@ class MatchApp:
             match_info, blue_info, white_info = self.refresh_match_item(match)
 
         def refresh_callback(e):
+            # this is a bit quick'n'dirty, but at least it works :-)
             match_info, blue_info, white_info = self.refresh_match_item(match)
 
             blue_box.content.controls[0].value = f"{blue_info[1]} {blue_info[0]}"
@@ -284,6 +285,7 @@ class MatchApp:
         return item
 
     def competitor_box(self, info, color=ft.colors.BLUE_300):
+        # if you change something here, please also check `refresh_callback`
 
         name = f"{info[1]} {info[0]}"
         club = f"({info[2]})"
