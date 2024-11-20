@@ -15,10 +15,9 @@ python ~/git_repos/judoshiai_utilities/init_shiai_db.py \
 ## Competition result GUI
 
 The script has a command line interface.
-In the working directory:
 
 ```shell
-python ~/git_repos/judoshiai_utilities/main.py --file masters_2023.shi
+python ~/git_repos/judoshiai_utilities/main.py --host localhost
 ```
 
 ## Aggregate results
