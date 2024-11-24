@@ -134,6 +134,10 @@ class MatchApp:
             text="Back", icon=ft.icons.ARROW_BACK, on_click=self.open_home
         )
 
+        reset_matches_button = ft.ElevatedButton(
+            text="CLEAR ALL MATCHES", icon=ft.icons.WARNING, on_click=self.reset_matches(matches), color=ft.colors.RED
+        )
+
         view = ft.View(
             f"/category/{cid}",
             [
@@ -141,7 +145,7 @@ class MatchApp:
                 back_button,
                 ft.Text(cat_info[0], size=40),
                 *rows,
-                back_button,
+                ft.Row([back_button, reset_matches_button], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
             scroll=ft.ScrollMode.AUTO,
         )
@@ -172,6 +176,17 @@ class MatchApp:
         view_elements = [self.appbar, button_reset]
         view = ft.View("/settings", view_elements)
         self.page.views.append(view)
+
+    def reset_matches(self, matches):
+
+        def reset_cat_matches(e):
+            for m in matches:
+                category_id = m[0]
+                match_id = m[1]
+                self.reset_points(category_id, match_id)
+
+        return reset_cat_matches
+
 
     def view_pop(self, e):
         print("View pop:", e.view)
@@ -369,6 +384,11 @@ class MatchApp:
             # e.page.update()
 
         return update_db_points
+
+    def reset_points(self, category_id, match_id):
+        self.jsc.set_match_result(
+            category_id, match_id, blue_score=0x0, white_score=0x0
+        )
 
     def reset_cache(self, e):
         self.matches = {}

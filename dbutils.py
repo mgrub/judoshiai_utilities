@@ -176,7 +176,7 @@ class JudoShiaiConnector_WEB:
         msg_ack = json.loads(ws.recv())
         if msg_ack["msg"][1] != 3:
             print(msg_ack)
-            raise Warning("Did not receive MSG_ACK.")
+            print("Did not receive MSG_ACK  ")
         ws.close()
 
 
