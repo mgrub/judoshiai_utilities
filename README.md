@@ -23,3 +23,7 @@ python ~/git_repos/judoshiai_utilities/main.py --host localhost
 ## Aggregate results
 
 todo
+
+## Notes
+
+The GUI requires a special build of JudoShiai to make use of the "reset matches" functionality.
