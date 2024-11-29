@@ -1,6 +1,8 @@
 import argparse
+import copy
 import json
 import re
+import os
 
 
 class ResultUtils:
@@ -102,10 +104,29 @@ class ResultUtils:
         
         return winners
 
-    def generate_certificates(self, winners, template_path):
-        print(winners)
+    def generate_certificates(self, winners, template_path, cat_name):
         print(template_path)
-        pass
+        
+        with open(template_path, "r") as f:
+            template = f.read()
+        
+        for place, clubs_and_points in winners.items():
+
+            for club, points in clubs_and_points:
+                print(place, club, points)
+
+                output_svg = copy.copy(template)
+
+                output_svg = output_svg.replace("@@GENDER_CAT@@", cat_name)
+                output_svg = output_svg.replace("@@CLUB@@", club)
+                output_svg = output_svg.replace("@@PLACE@@", str(place))
+
+                save_clubname = "".join(x for x in club if x.isalnum())
+                
+                output_path = os.path.join(os.getcwd(), "urkunde", f"urkunde_{cat_name}_place_{place}_{save_clubname}.svg")
+
+                with open(output_path, "w") as f:
+                    f.write(output_svg)
 
     def pos_to_point(self, pos):
         if pos in self.medal_points.keys():
@@ -171,12 +192,15 @@ if __name__ == "__main__":
 
 
 
-"""     
-    # testing
-    ru = ResultUtils(
-        "/home/maxwell/Desktop/judoshiai_test/MASTERS_2023_TEST/results/results.json"
-    )
-    # ru.winners_by_category(pos_max=3)  # filter="Men|Women"
-    ru.group_summary("Men.*")
-    ru.group_summary("Women.*")
- """
+# # testing
+# ru = ResultUtils(
+#     "/home/maxwell/Desktop/judoshiai_test/MASTERS_2023_TEST/results/results.json"
+# )
+# # ru.winners_by_category(pos_max=3)  # filter="Men|Women"
+# winners_men = ru.group_summary("Men.*")
+# winners_women = ru.group_summary("Women.*")
+
+# group_cert_template = "/home/maxwell/Desktop/Masters_2024/urkunde/urkunde_template.svg"
+
+# ru.generate_certificates(winners_men, group_cert_template, "Männer")
+# ru.generate_certificates(winners_women, group_cert_template, "Frauen")
