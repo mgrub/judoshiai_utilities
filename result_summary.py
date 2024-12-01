@@ -4,6 +4,8 @@ import json
 import re
 import os
 
+import pandas
+
 
 class ResultUtils:
 
@@ -170,6 +172,23 @@ class ResultUtils:
         else:
             return 0
 
+    def create_starts_overview(self):
+
+        column_names = ["first", "last", "club", "category"]
+        rows = []
+
+        for c in self.competitors:
+            row = [c[key] for key in column_names]
+            rows.append(row)
+            
+
+        df = pandas.DataFrame(rows, columns=column_names)
+        df = df.sort_values("club").reset_index(drop=True)
+        
+        # write to excel
+        output_path = os.path.join(self.results_dir, "..", "starts_by_club.xlsx")
+        df.to_excel(output_path, index=False)
+        print(os.path.abspath(output_path))
 
 if __name__ == "__main__":
 
@@ -209,6 +228,12 @@ if __name__ == "__main__":
         help="create certificates based on template for places 1+2+3",
     )
 
+    parser.add_argument(
+        "--create-starts-overview",
+        action='store_true',
+        help="create list for comparison with registration",
+    )
+
     args = parser.parse_args()
 
     # summarize results
@@ -225,7 +250,8 @@ if __name__ == "__main__":
             ru.generate_certificates(winners_men, args.group_cert_template, "Männer")
             ru.generate_certificates(winners_women, args.group_cert_template, "Frauen")
 
-
+    if args.create_starts_overview:
+        ru.create_starts_overview()
 
 
 # # testing
@@ -241,3 +267,5 @@ if __name__ == "__main__":
 
 # ru.generate_certificates(winners_men, group_cert_template, "Männer")
 # ru.generate_certificates(winners_women, group_cert_template, "Frauen")
+
+# ru.create_starts_overview()
