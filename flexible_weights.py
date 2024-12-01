@@ -105,13 +105,14 @@ fig, ax = plt.subplots(1, 2)
 best_solution = suitable_results[0][0]  # "best" not best
 best_solution_visualization = both_can_compete * 1.0
 i = 0
-for cat in best_solution:
+for icat, cat in enumerate(best_solution):
     best_solution_visualization[i:i+cat,i:i+cat] = 2
+    print(f"Category {icat+1:02d}: {data_sorted[i]:0.2f} - {data_sorted[i+cat-1]:0.2f} kg")
     i += cat
 
 
-ax[0].pcolormesh(X_weight, Y_weight, best_solution_visualization, edgecolors="k", linewidth=0.5)
-ax[1].pcolormesh(X_count, Y_count, best_solution_visualization, edgecolors="k", linewidth=0.5)
+ax[0].pcolormesh(X_weight, Y_weight, best_solution_visualization, edgecolors="k", linewidth=0.0)
+ax[1].pcolormesh(X_count, Y_count, best_solution_visualization, edgecolors="k", linewidth=0.0)
 
 ax[0].set_aspect("equal")
 ax[1].set_aspect("equal")
