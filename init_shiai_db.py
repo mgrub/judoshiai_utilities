@@ -41,6 +41,11 @@ parser.add_argument(
     default="competition",
     help="competition name (used for file naming)",
 )
+parser.add_argument(
+    "--ignore-weight-cat",
+    action='store_true',
+    help="put all competitors into <agecat ?>",
+)
 
 # parse CLI arguments
 args = parser.parse_args()
@@ -104,14 +109,18 @@ for i, row in df.iterrows():
         age_cat = age_cat_from_age_and_gender(row["AgeCat"], row["Gender"])
         gender = 2 if row["Gender"] == "female" else 1
 
-        weight_cat = ""
-        weight = 0
-        if pandas.notna(row["WeightCat"]):
-            raw_weight_cat = row["WeightCat"]
-            weight = int(raw_weight_cat) * 1000
-            if raw_weight_cat[0] != "+":
-                raw_weight_cat = "-" + raw_weight_cat
-            weight_cat = raw_weight_cat + "kg"
+        if args.ignore_weight_cat:
+            weight_cat = "?"
+            weight = 1000
+        else:
+            weight_cat = ""
+            weight = 0
+            if pandas.notna(row["WeightCat"]):
+                raw_weight_cat = row["WeightCat"]
+                weight = int(raw_weight_cat) * 1000
+                if raw_weight_cat[0] != "+":
+                    raw_weight_cat = "-" + raw_weight_cat
+                weight_cat = raw_weight_cat + "kg"
         cat = f"{age_cat} {weight_cat}"
 
         birthyear = int(row["Born"]) if pandas.notna(row["Born"]) else 0
