@@ -46,6 +46,11 @@ parser.add_argument(
     action='store_true',
     help="put all competitors into <agecat ?>",
 )
+parser.add_argument(
+    "--use-youth-categories",
+    action='store_true',
+    help="use categories of style <u12m>",
+)
 
 # parse CLI arguments
 args = parser.parse_args()
@@ -80,19 +85,29 @@ for i, catdef in enumerate(catdefs):
 # init competitors
 def age_cat_from_age_and_gender(age_raw, gender_raw):
     age_cat = ""
-    if gender_raw == "female":
-        age_cat += "Women"
-    elif gender_raw == "male":
-        age_cat += "Men"
+    
+    if args.use_youth_categories:
+        age_cat += age_raw
 
-    if age_raw == "open":
-        pass
-    elif age_raw == "u18":
-        age_cat += " u18"
-    elif age_raw[0] in ["ü", "Ü"]:
-        age_cat += " +" + str(age_raw[1:])
+        if gender_raw == "female":
+            age_cat += "w"
+        elif gender_raw == "male":
+            age_cat += "m"
+
     else:
-        age_cat += " +" + str(age_raw)
+        if gender_raw == "female":
+            age_cat += "Women"
+        elif gender_raw == "male":
+            age_cat += "Men"
+
+        if age_raw == "open":
+            pass
+        elif age_raw == "u18":
+            age_cat += " u18"
+        elif age_raw[0] in ["ü", "Ü"]:
+            age_cat += " +" + str(age_raw[1:])
+        else:
+            age_cat += " +" + str(age_raw)
 
     return age_cat
 
