@@ -121,6 +121,14 @@ class JudoShiaiConnector_WEB:
         """
         return self.select_cmd(cmd)[0]
 
+    def get_competitors_of_category(self, cat_label):
+        cmd = f"""
+        SELECT last, first, club, birthyear, country, category, weight
+        FROM "main"."competitors"
+        WHERE "category" == "{cat_label}" ;
+        """
+        return self.select_cmd(cmd)
+
     def get_competitor_info(self, cid):
         cmd = f"""
         SELECT last, first, club, birthyear, country
