@@ -1,2 +1,8 @@
 flet
 websocket-client
+numpy
+pandas
+scipy
+matplotlib
+requests
+openpyxl
