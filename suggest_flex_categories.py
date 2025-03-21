@@ -152,7 +152,7 @@ class FlexWeightUtils:
             for cig in competitors_in_group:
                 competitor_text = f"{cig[0]}, {cig[1]}, {cig[2]}, {float(cig[-1])/1000:0.2f}kg"
                 competitor_texts.append(competitor_text)
-            cat_descriptions[cat_text] = sorted(competitor_texts)
+            cat_descriptions[cat_text] = competitor_texts # sorted(competitor_texts)
             i += cat
 
         # plot some information about the weight distribution
