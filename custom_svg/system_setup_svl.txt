@@ -1,0 +1,9 @@
+number of competitors -> system (system id)
+
+ 1 -   1 -> default
+ 2 -   2 -> Best of 3              (18)
+ 3 -   5 -> Pool                   ( 1)
+ 6 -   6 -> Double Pool            ( 2)
+ 7 -   8 -> FIN Double Repechage   ( 3)
+ 9 -  32 -> EST Double Elimination ( 6)
+33 - 128 -> FIN Double Repechage   ( 3)
