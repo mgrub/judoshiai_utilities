@@ -37,9 +37,9 @@
      inkscape:window-height="1136"
      id="namedview1175"
      showgrid="false"
-     inkscape:zoom="0.90132663"
-     inkscape:cx="336.17114"
-     inkscape:cy="659.02857"
+     inkscape:zoom="0.63733417"
+     inkscape:cx="40.794925"
+     inkscape:cy="533.4721"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -67,7 +67,7 @@
        transform="matrix(0,-0.96919546,0.96919546,0,-22.322425,1621.0607)">
       <g
          id="g1034"
-         transform="translate(565.54521,142.57325)">
+         transform="translate(548.93647,177.02927)">
         <text
            style="font-size:13.424px;line-height:0%;font-family:Calibri;text-align:start"
            y="713.63245"
@@ -331,7 +331,7 @@
          id="g1069" />
       <g
          id="g1448"
-         transform="matrix(1.3774744,0,0,1.3774744,42.057638,-26.146138)">
+         transform="matrix(1.3774744,0,0,1.3774744,101.82195,-26.146138)">
         <rect
            style="fill:#ffaaaa;fill-rule:evenodd;stroke:#000000;stroke-width:0.993445"
            width="38.781555"
@@ -2548,25 +2548,25 @@
       <text
          style="font-size:24.93px;line-height:0%;font-family:Calibri;text-align:center;text-anchor:middle;stroke-width:1.03178"
          y="64.226067"
-         x="1010.7635"
+         x="1017.0545"
          font-size="24.162"
          id="text13">%i-competition</text>
       <text
          style="font-size:13.8507px;line-height:0%;font-family:Calibri;text-align:center;text-anchor:middle;stroke-width:1.03178"
          y="80.852219"
-         x="1010.3921"
+         x="1016.6831"
          font-size="13.424"
          id="text15">%i-place</text>
       <text
          style="font-size:13.8507px;line-height:0%;font-family:Calibri;text-align:center;text-anchor:middle;stroke-width:1.03178"
          y="97.257584"
-         x="1010.3921"
+         x="1016.6831"
          font-size="13.424"
          id="text17">%i-date</text>
       <text
          style="font-size:13.8507px;line-height:0%;font-family:Calibri;text-align:end;text-anchor:end;stroke-width:1.03178"
          y="79.425797"
-         x="1612.8252"
+         x="1619.1162"
          font-size="13.424"
          id="text19"><tspan
            style="font-weight:bold;font-size:62.9099px;-inkscape-font-specification:'Calibri Bold';stroke-width:1.03178"
@@ -2576,7 +2576,7 @@
       <text
          style="font-size:13.8507px;line-height:0%;font-family:Calibri;text-align:end;text-anchor:end;stroke-width:1.03178"
          y="106.0778"
-         x="1612.0111"
+         x="1618.3021"
          font-size="13.424"
          id="text25"><tspan
            font-size="22.865"
