@@ -2,6 +2,8 @@ import argparse
 import json
 import os
 import re
+import subprocess
+import shlex
 
 import pandas
 import numpy as np
@@ -180,11 +182,19 @@ class FlexWeightUtils:
         fig.savefig(plot_filename, bbox_inches="tight", dpi=300)
 
         # turn into markdown file
-        f = open(f"suggested_flex_cat_{cat_name_all}.md", "w", encoding="UTF-8")
+        output_path = f"suggested_flex_cat_{cat_name_all}.md"
+        f = open(output_path, "w", encoding="UTF-8")
         
+        header = """---
+geometry: "a4paper,left=3cm,right=3cm,top=2cm,bottom=2cm"
+header-includes:
+- \\usepackage[defaultlines=4,all]{nowidow}
+---\n\n"""
+        
+        f.write(header)
         f.write(f"# Gewichtsklassen {cat_name_all}\n\n")
-        for cd in cat_descriptions.keys():
-            f.write(f"- {cd}\n")
+        for cd, cts in cat_descriptions.items():
+            f.write(f"- {cd}, {len(cts)} Personen\n")
         f.write("\n")
 
         f.write("## Zuordnungen\n\n")
@@ -194,13 +204,17 @@ class FlexWeightUtils:
                 f.write(f"- {ct}\n")
             f.write("\n")
         
+        f.write("\pagebreak\n")
         f.write("## Verteilung\n\n")
         f.write(f"![image]({plot_filename})\n")
         f.write("Gewichtsverteilung sowie Klasseneinteilung über Gewicht\n")
         
         f.close()
 
-        # TODO: directly generate pdf for printing using pandoc 
+        # directly generate pdf for printing using pandoc 
+        cmd_args = shlex.split(f"pandoc \"{output_path}\" -o \"{output_path}.pdf\"")
+        p = subprocess.Popen(cmd_args)
+        p.wait()
 
 if __name__ == "__main__":
     # argparse interface
