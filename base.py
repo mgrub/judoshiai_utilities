@@ -32,12 +32,12 @@ class MatchApp:
         ]
 
         self.appbar = ft.AppBar(
-            leading=ft.Icon(ft.icons.CLOUD),
+            leading=ft.Icon(ft.Icons.CLOUD),
             leading_width=100,
             title=ft.Text(self.page.title, size=20, text_align="start"),
             center_title=False,
             toolbar_height=75,
-            bgcolor=ft.colors.LIGHT_BLUE_ACCENT_700,
+            bgcolor=ft.Colors.LIGHT_BLUE_ACCENT_700,
             actions=[
                 ft.Container(
                     content=ft.PopupMenuButton(items=self.appbar_items),
@@ -80,7 +80,7 @@ class MatchApp:
 
         for cat in categories:
             is_finished = self.check_status(cat)
-            color = ft.colors.LIGHT_BLUE_100 if is_finished else ft.colors.WHITE
+            color = ft.Colors.LIGHT_BLUE_100 if is_finished else ft.Colors.WHITE
             item = ft.Container(
                 content=ft.Text(cat[1], size=30),
                 col={"sm": 6, "md": 4, "xl": 2},
@@ -131,11 +131,11 @@ class MatchApp:
             rows.append(mi)
 
         back_button = ft.ElevatedButton(
-            text="Back", icon=ft.icons.ARROW_BACK, on_click=self.open_home
+            text="Back", icon=ft.Icons.ARROW_BACK, on_click=self.open_home
         )
 
         reset_matches_button = ft.ElevatedButton(
-            text="CLEAR ALL MATCHES", icon=ft.icons.WARNING, on_click=self.reset_matches(matches), color=ft.colors.RED
+            text="CLEAR ALL MATCHES", icon=ft.Icons.WARNING, on_click=self.reset_matches(matches), color=ft.Colors.RED
         )
 
         view = ft.View(
@@ -171,7 +171,7 @@ class MatchApp:
         button_reset = ft.ElevatedButton(
             text="Reset user data",
             on_click=self.reset_cache,
-            icon=ft.icons.RESTART_ALT,
+            icon=ft.Icons.RESTART_ALT,
         )
         view_elements = [self.appbar, button_reset]
         view = ft.View("/settings", view_elements)
@@ -210,7 +210,7 @@ class MatchApp:
         self.page.go("/settings")
 
     def row_container_hover(self, e):
-        e.control.bgcolor = ft.colors.LIGHT_BLUE_50 if e.data == "true" else ""
+        e.control.bgcolor = ft.Colors.LIGHT_BLUE_50 if e.data == "true" else ""
         e.control.update()
 
     def refresh_match_item(self, match):
@@ -261,13 +261,13 @@ class MatchApp:
 
             self.page.update()
 
-        refresh_button = ft.IconButton(icon=ft.icons.REFRESH, on_click=refresh_callback)
-        blue_box = self.competitor_box(blue_info, color=ft.colors.BLUE_300)
+        refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, on_click=refresh_callback)
+        blue_box = self.competitor_box(blue_info, color=ft.Colors.WHITE)
         blue_points = self.match_result_radiogroup(
             cat_id, match_number, match_info, is_blue=True
         )
 
-        white_box = self.competitor_box(white_info, color=ft.colors.WHITE)
+        white_box = self.competitor_box(white_info, color=ft.Colors.BLUE_300)
         white_points = self.match_result_radiogroup(
             cat_id, match_number, match_info, is_blue=False
         )
@@ -283,12 +283,12 @@ class MatchApp:
                 opacity=opacity,
             ),
             ft.Container(
-                content=ft.Row([white_box, white_points]),
+                content=ft.Row([blue_box, blue_points]),
                 col={"sm": 12, "md": 10, "xxl": 5},
                 opacity=opacity,
             ),
             ft.Container(
-                content=ft.Row([blue_box, blue_points]),
+                content=ft.Row([white_box, white_points]),
                 col={"sm": 12, "md": 10, "xxl": 5},
                 opacity=opacity,
             ),
@@ -299,7 +299,7 @@ class MatchApp:
 
         return item
 
-    def competitor_box(self, info, color=ft.colors.BLUE_300):
+    def competitor_box(self, info, color=ft.Colors.BLUE_300):
         # if you change something here, please also check `refresh_callback`
 
         name = f"{info[1]} {info[0]}"
@@ -307,7 +307,7 @@ class MatchApp:
 
         box = ft.Container(
             content=ft.Column([ft.Text(name, size=30), ft.Text(club, size=22)]),
-            border=ft.border.all(1, ft.colors.GREY_300),
+            border=ft.border.all(1, ft.Colors.GREY_300),
             margin=10,
             padding=10,
             alignment=ft.alignment.center_left,
@@ -337,6 +337,10 @@ class MatchApp:
                     ),
                     ft.Column(
                         [ft.Text("1"), ft.Radio(value=0x00010, label="")],
+                        alignment=ft.alignment.center,
+                    ),
+                    ft.Column(
+                        [ft.Text("5"), ft.Radio(value=0x00100, label="")],
                         alignment=ft.alignment.center,
                     ),
                     ft.Column(

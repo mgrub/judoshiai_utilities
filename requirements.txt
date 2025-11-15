@@ -1,4 +1,5 @@
 flet
+flet_core
 websocket-client
 numpy
 pandas
