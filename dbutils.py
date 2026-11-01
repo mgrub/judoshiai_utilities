@@ -1,6 +1,8 @@
-import sqlite3 as sql
-import requests
+import asyncio
 import json
+
+import httpx
+import sqlite3 as sql
 import websocket
 
 
@@ -80,7 +82,7 @@ class JudoShiaiConnector_WEB:
         self.port = 8088
         self.port_ws = 2315
 
-    def select_cmd(self, cmd):
+    async def select_cmd(self, cmd):
         # curl -X POST -H 'Content-Type: application/json' -d '{"op": "sql", "pw": "PASSWD", "cmd":"SELECT agetext, weighttext FROM main.catdef"}' http://localhost:8088/json
         url = f"http://{self.host}:{self.port}/json"
         headers = {"Content-Type": "application/json; charset=utf-8"}
@@ -88,7 +90,9 @@ class JudoShiaiConnector_WEB:
         
         print(" ".join([l.strip() for l in cmd.split("\n")]))
 
-        response = requests.post(url, headers=headers, json=json_data)
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, json=json_data)
+
         response.encoding = "utf-8"
 
         res_list = []
@@ -97,15 +101,15 @@ class JudoShiaiConnector_WEB:
 
         return res_list
 
-    def get_categories(self):
+    async def get_categories(self):
         cmd = """
         SELECT "index", category, numcomp, pos1, pos2, pos3, pos4
         FROM "main"."categories" 
         WHERE deleted == 0 ;
         """
-        return self.select_cmd(cmd)
+        return await self.select_cmd(cmd)
 
-    def get_category_info(self, cid):
+    async def get_category_info(self, cid):
         cmd = f"""
         SELECT category, numcomp, pos1, pos2, pos3, pos4
         FROM "main"."categories"
@@ -113,23 +117,23 @@ class JudoShiaiConnector_WEB:
         """
         return self.select_cmd(cmd)[0]
 
-    def get_match_info(self, cid, mid):
+    async def get_match_info(self, cid, mid):
         cmd = f"""
         SELECT blue, white, blue_points, white_points
         FROM "main"."matches"
         WHERE "category" == {cid} AND "number" == {mid} ;
         """
-        return self.select_cmd(cmd)[0]
+        return await self.select_cmd(cmd)[0]
 
-    def get_competitors_of_category(self, cat_label):
+    async def get_competitors_of_category(self, cat_label):
         cmd = f"""
         SELECT last, first, club, birthyear, country, category, weight
         FROM "main"."competitors"
         WHERE "category" == "{cat_label}" ;
         """
-        return self.select_cmd(cmd)
+        return await self.select_cmd(cmd)
 
-    def get_competitor_info(self, cid):
+    async def get_competitor_info(self, cid):
         cmd = f"""
         SELECT last, first, club, birthyear, country
         FROM "main"."competitors"
@@ -141,17 +145,17 @@ class JudoShiaiConnector_WEB:
         elif cid == "1":
             return ["empty", "", "", "", ""]
         else:
-            return self.select_cmd(cmd)[0]
+            return await self.select_cmd(cmd)[0]
 
-    def get_matches(self, category_id):
+    async def get_matches(self, category_id):
         cmd = f"""
         SELECT category, number, blue_points, white_points
         FROM "main"."matches" 
         WHERE category == {category_id} ;
         """
-        return self.select_cmd(cmd)
+        return await self.select_cmd(cmd)
 
-    def set_match_result(self, category_id, match_id, blue_score, white_score):
+    def set_match_result_sync(self, category_id, match_id, blue_score, white_score):
         
         msg = {
             "msg": [
@@ -187,6 +191,9 @@ class JudoShiaiConnector_WEB:
             print("Did not receive MSG_ACK  ")
         ws.close()
 
+    async def set_match_result(self, *args, **kwargs):
+        return await asyncio.to_thread(self.set_match_result_sync, args, kwargs)
+
 
 if __name__ == "__main__":
 
@@ -197,6 +204,6 @@ if __name__ == "__main__":
 
     jsc_online = JudoShiaiConnector_WEB()
     print(jsc_online.get_categories())
-    #print(jsc_online.get_matches(10014))
-    #print(jsc_online.get_competitor_info(29))
-    jsc_online.set_match_result(10014, 1, 0x10000, 0x01000) 
+    print(jsc_online.get_matches(10014))
+    print(jsc_online.get_competitor_info(29))
+    #jsc_online.set_match_result(10014, 1, 0x10000, 0x01000) 

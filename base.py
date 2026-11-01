@@ -1,4 +1,7 @@
+import asyncio
+
 import flet as ft
+
 from dbutils import JudoShiaiConnector_WEB
 
 
@@ -48,17 +51,17 @@ class MatchApp:
         self.page.appbar = self.appbar
         self.page.update()
 
-    def route_change(self, e):
+    async def route_change(self, e):
         troute = ft.TemplateRoute(self.page.route)
 
         self.page.views.clear()
 
         if troute.match("/"):
-            self.set_overview_view()
+            await self.set_overview_view()
 
         elif troute.match("/category/:id"):
             qid = troute.id
-            self.set_category_view(qid)
+            await self.set_category_view(qid)
 
         elif troute.match("/about"):
             self.set_about_view()
@@ -71,10 +74,10 @@ class MatchApp:
 
         self.page.update()
 
-    def set_overview_view(self):
+    async def set_overview_view(self):
         self.solution_found = []
 
-        categories = self.jsc.get_categories()
+        categories = await self.jsc.get_categories()
 
         columns = []
 
@@ -119,11 +122,11 @@ class MatchApp:
             is_finished = False
 
         return is_finished
+    
+    async def set_category_view(self, cid):
 
-    def set_category_view(self, cid):
-
-        matches = self.jsc.get_matches(cid)
-        cat_info = self.jsc.get_category_info(cid)
+        matches = await self.jsc.get_matches(cid)
+        cat_info = await self.jsc.get_category_info(cid)
         rows = []
 
         for match in matches:
@@ -198,49 +201,51 @@ class MatchApp:
 
         return reset_cat_matches
 
-
-    def view_pop(self, e):
+    async def view_pop(self, e):
         print("View pop:", e.view)
         self.page.views.pop()
         top_view = self.page.views[-1]
-        self.page.go(top_view.route)
+        await self.page.push_route(top_view.route)
 
     def open_category(self, cid):
         def open_cid(e):
-            self.page.go(f"/category/{cid}")
+            self.page.push_route(f"/category/{cid}")
 
         return open_cid
 
     def open_home(self, e):
-        self.page.go("/")
+        call = lambda: asyncio.create_task(self.page.push_route("/"))
+        return call
 
     def open_about(self, e):
-        self.page.go("/about")
+        call = lambda: asyncio.create_task(self.page.push_route("/about"))
+        return call
 
     def open_settings(self, e):
-        self.page.go("/settings")
+        call = lambda: asyncio.create_task(self.page.push_route("/settings"))
+        return call
 
     def row_container_hover(self, e):
         e.control.bgcolor = ft.Colors.LIGHT_BLUE_50 if e.data == "true" else ""
         e.control.update()
 
-    def refresh_match_item(self, match):
+    async def refresh_match_item(self, match):
         cat_id = match[0]
         match_number = match[1]
 
         # retrieve match informations
-        match_info = self.jsc.get_match_info(cat_id, match_number)
+        match_info = await self.jsc.get_match_info(cat_id, match_number)
         if cat_id in self.matches.keys():
             self.matches[cat_id][match_number] = match_info
         else:
             self.matches[cat_id] = {match_number: match_info}
 
         # update info about competitor blue
-        blue_info = self.jsc.get_competitor_info(match_info[0])
+        blue_info = await self.jsc.get_competitor_info(match_info[0])
         self.competitors[match_info[0]] = blue_info
 
         # update info about competitor white
-        white_info = self.jsc.get_competitor_info(match_info[1])
+        white_info = await self.jsc.get_competitor_info(match_info[1])
         self.competitors[match_info[1]] = white_info
 
         return match_info, blue_info, white_info
@@ -385,20 +390,20 @@ class MatchApp:
         else:
             return 0x00000
 
-    def update_points(self, category_id, match_id, is_blue):
-        def update_db_points(e):
+    async def update_points(self, category_id, match_id, is_blue):
+        async def update_db_points(e):
             winner_score = e.control.value
             if is_blue:
-                self.jsc.set_match_result(
+                await self.jsc.set_match_result(
                     category_id, match_id, blue_score=winner_score, white_score=0x0
                 )
             else:
-                self.jsc.set_match_result(
+                await self.jsc.set_match_result(
                     category_id, match_id, blue_score=0x0, white_score=winner_score
                 )
             # e.page.update()
 
-        return update_db_points
+        return await update_db_points
 
     def reset_points(self, category_id, match_id):
         self.jsc.set_match_result(

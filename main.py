@@ -1,7 +1,8 @@
-import flet as ft
-import flet_core as ftc
 import argparse
 import os
+
+import flet as ft
+import flet_core as ftc
 
 from base import MatchApp
 
@@ -26,10 +27,10 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def main(page: ft.Page):
+async def main(page: ft.Page):
     print("Initial route:", page.route)
     app = MatchApp(page, host=args.host)
-    page.go(page.route)
+    await app.route_change(page.route)
 
 
-ft.app(main)
+ft.run(main)
