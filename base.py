@@ -29,9 +29,9 @@ class MatchApp:
 
         # define reusable app bar
         self.appbar_items = [
-            ft.PopupMenuItem(content="Main", on_click=self.open_home),
-            ft.PopupMenuItem(content="About", on_click=self.open_about),
-            ft.PopupMenuItem(content="Settings", on_click=self.open_settings),
+            ft.PopupMenuItem(content="Main", on_click=self.open_home()),
+            ft.PopupMenuItem(content="About", on_click=self.open_about()),
+            ft.PopupMenuItem(content="Settings", on_click=self.open_settings()),
         ]
 
         self.appbar = ft.AppBar(
@@ -105,8 +105,8 @@ class MatchApp:
         view_elements = [self.appbar, resprows]
 
         view = ft.View(
-            "/",
-            view_elements,
+            controls=view_elements,
+            route="/",
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             scroll=ft.ScrollMode.AUTO,
         )
@@ -122,7 +122,7 @@ class MatchApp:
             is_finished = False
 
         return is_finished
-    
+
     async def set_category_view(self, cid):
 
         matches = await self.jsc.get_matches(cid)
@@ -136,7 +136,7 @@ class MatchApp:
         back_button = ft.Button(
             content="Back",
             icon=ft.Icons.ARROW_BACK,
-            on_click=self.open_home,
+            on_click=self.open_home(),
             elevation=1,
         )
 
@@ -149,8 +149,7 @@ class MatchApp:
         )
 
         view = ft.View(
-            f"/category/{cid}",
-            [
+            controls=[
                 self.appbar,
                 back_button,
                 ft.Text(cat_info[0], size=40),
@@ -160,14 +159,14 @@ class MatchApp:
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 ),
             ],
+            route=f"/category/{cid}",
             scroll=ft.ScrollMode.AUTO,
         )
         self.page.views.append(view)
 
     def set_about_view(self):
         view = ft.View(
-            "/about",
-            [
+            controls=[
                 self.appbar,
                 ft.Text(
                     size=30,
@@ -177,6 +176,7 @@ class MatchApp:
                     ],
                 ),
             ],
+            route="/about",
         )
         self.page.views.append(view)
 
@@ -188,7 +188,7 @@ class MatchApp:
             elevation=1,
         )
         view_elements = [self.appbar, button_reset]
-        view = ft.View("/settings", view_elements)
+        view = ft.View(controls=view_elements, route="/settings")
         self.page.views.append(view)
 
     def reset_matches(self, matches):
@@ -208,21 +208,21 @@ class MatchApp:
         await self.page.push_route(top_view.route)
 
     def open_category(self, cid):
-        def open_cid(e):
+        open_cid = lambda e: asyncio.create_task(
             self.page.push_route(f"/category/{cid}")
-
+        )
         return open_cid
 
-    def open_home(self, e):
-        call = lambda: asyncio.create_task(self.page.push_route("/"))
+    def open_home(self):
+        call = lambda e: asyncio.create_task(self.page.push_route("/"))
         return call
 
-    def open_about(self, e):
-        call = lambda: asyncio.create_task(self.page.push_route("/about"))
+    def open_about(self):
+        call = lambda e: asyncio.create_task(self.page.push_route("/about"))
         return call
 
-    def open_settings(self, e):
-        call = lambda: asyncio.create_task(self.page.push_route("/settings"))
+    def open_settings(self):
+        call = lambda e: asyncio.create_task(self.page.push_route("/settings"))
         return call
 
     def row_container_hover(self, e):
