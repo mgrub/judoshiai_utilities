@@ -26,9 +26,9 @@ class MatchApp:
 
         # define reusable app bar
         self.appbar_items = [
-            ft.PopupMenuItem(text="Main", on_click=self.open_home),
-            ft.PopupMenuItem(text="About", on_click=self.open_about),
-            ft.PopupMenuItem(text="Settings", on_click=self.open_settings),
+            ft.PopupMenuItem(content="Main", on_click=self.open_home),
+            ft.PopupMenuItem(content="About", on_click=self.open_about),
+            ft.PopupMenuItem(content="Settings", on_click=self.open_settings),
         ]
 
         self.appbar = ft.AppBar(
@@ -41,7 +41,7 @@ class MatchApp:
             actions=[
                 ft.Container(
                     content=ft.PopupMenuButton(items=self.appbar_items),
-                    margin=ft.margin.only(left=50, right=25),
+                    margin=ft.margin.Margin().only(left=50, right=25),
                 )
             ],
         )
@@ -87,7 +87,7 @@ class MatchApp:
                 on_click=self.open_category(cat[0]),
                 margin=10,
                 padding=10,
-                alignment=ft.alignment.center,
+                alignment=ft.alignment.Alignment.CENTER,
                 bgcolor=color,
                 width=200,
                 height=80,
@@ -130,12 +130,19 @@ class MatchApp:
             mi = self.match_item(match)
             rows.append(mi)
 
-        back_button = ft.ElevatedButton(
-            text="Back", icon=ft.Icons.ARROW_BACK, on_click=self.open_home
+        back_button = ft.Button(
+            content="Back",
+            icon=ft.Icons.ARROW_BACK,
+            on_click=self.open_home,
+            elevation=1,
         )
 
-        reset_matches_button = ft.ElevatedButton(
-            text="CLEAR ALL MATCHES", icon=ft.Icons.WARNING, on_click=self.reset_matches(matches), color=ft.Colors.RED
+        reset_matches_button = ft.Button(
+            content="CLEAR ALL MATCHES",
+            icon=ft.Icons.WARNING,
+            on_click=self.reset_matches(matches),
+            color=ft.Colors.RED,
+            elevation=1,
         )
 
         view = ft.View(
@@ -145,7 +152,10 @@ class MatchApp:
                 back_button,
                 ft.Text(cat_info[0], size=40),
                 *rows,
-                ft.Row([back_button, reset_matches_button], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Row(
+                    [back_button, reset_matches_button],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                ),
             ],
             scroll=ft.ScrollMode.AUTO,
         )
@@ -168,10 +178,11 @@ class MatchApp:
         self.page.views.append(view)
 
     def set_settings_view(self):
-        button_reset = ft.ElevatedButton(
-            text="Reset user data",
+        button_reset = ft.Button(
+            content="Reset user data",
             on_click=self.reset_cache,
             icon=ft.Icons.RESTART_ALT,
+            elevation=1,
         )
         view_elements = [self.appbar, button_reset]
         view = ft.View("/settings", view_elements)
