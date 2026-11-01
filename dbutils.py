@@ -81,6 +81,7 @@ class JudoShiaiConnector_WEB:
         self.host = host
         self.port = 8088
         self.port_ws = 2315
+        self.client = httpx.AsyncClient()
 
     async def select_cmd(self, cmd):
         # curl -X POST -H 'Content-Type: application/json' -d '{"op": "sql", "pw": "PASSWD", "cmd":"SELECT agetext, weighttext FROM main.catdef"}' http://localhost:8088/json
@@ -90,15 +91,14 @@ class JudoShiaiConnector_WEB:
         
         print(" ".join([l.strip() for l in cmd.split("\n")]))
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, headers=headers, json=json_data)
-
+        response = await self.client.post(url, headers=headers, json=json_data)
         response.encoding = "utf-8"
 
         res_list = []
         if response.status_code == 200:
             res_list = json.loads(response.text)[1:]
 
+        print(res_list)
         return res_list
 
     async def get_categories(self):
@@ -115,7 +115,7 @@ class JudoShiaiConnector_WEB:
         FROM "main"."categories"
         WHERE "index" == {cid} ;
         """
-        return self.select_cmd(cmd)[0]
+        return (await self.select_cmd(cmd))[0]
 
     async def get_match_info(self, cid, mid):
         cmd = f"""
@@ -123,7 +123,7 @@ class JudoShiaiConnector_WEB:
         FROM "main"."matches"
         WHERE "category" == {cid} AND "number" == {mid} ;
         """
-        return await self.select_cmd(cmd)[0]
+        return (await self.select_cmd(cmd))[0]
 
     async def get_competitors_of_category(self, cat_label):
         cmd = f"""
@@ -145,7 +145,7 @@ class JudoShiaiConnector_WEB:
         elif cid == "1":
             return ["empty", "", "", "", ""]
         else:
-            return await self.select_cmd(cmd)[0]
+            return (await self.select_cmd(cmd))[0]
 
     async def get_matches(self, category_id):
         cmd = f"""

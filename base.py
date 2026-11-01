@@ -130,7 +130,7 @@ class MatchApp:
         rows = []
 
         for match in matches:
-            mi = self.match_item(match)
+            mi = await self.match_item(match)
             rows.append(mi)
 
         back_button = ft.Button(
@@ -250,7 +250,7 @@ class MatchApp:
 
         return match_info, blue_info, white_info
 
-    def match_item(self, match):
+    async def match_item(self, match):
 
         cat_id = match[0]
         match_number = match[1]
@@ -263,11 +263,11 @@ class MatchApp:
             blue_info = self.competitors[match_info[0]]
             white_info = self.competitors[match_info[1]]
         else:
-            match_info, blue_info, white_info = self.refresh_match_item(match)
+            match_info, blue_info, white_info = await self.refresh_match_item(match)
 
-        def refresh_callback(e):
+        async def refresh_callback(e):
             # this is a bit quick'n'dirty, but at least it works :-)
-            match_info, blue_info, white_info = self.refresh_match_item(match)
+            match_info, blue_info, white_info = await self.refresh_match_item(match)
 
             blue_box.content.controls[0].value = f"{blue_info[1]} {blue_info[0]}"
             blue_box.content.controls[1].value = f"({blue_info[2]})"
@@ -323,10 +323,10 @@ class MatchApp:
 
         box = ft.Container(
             content=ft.Column([ft.Text(name, size=30), ft.Text(club, size=22)]),
-            border=ft.border.all(1, ft.Colors.GREY_300),
+            border=ft.border.Border().all(1, ft.Colors.GREY_300),
             margin=10,
             padding=10,
-            alignment=ft.alignment.center_left,
+            alignment=ft.alignment.Alignment.CENTER_LEFT,
             bgcolor=color,
             height=100,
             border_radius=10,
@@ -349,23 +349,23 @@ class MatchApp:
                 [
                     ft.Column(
                         [ft.Text("0"), ft.Radio(value=0x00000, label="")],
-                        alignment=ft.alignment.center,
+                        alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
                         [ft.Text("1"), ft.Radio(value=0x00010, label="")],
-                        alignment=ft.alignment.center,
+                        alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
                         [ft.Text("5"), ft.Radio(value=0x00100, label="")],
-                        alignment=ft.alignment.center,
+                        alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
                         [ft.Text("7"), ft.Radio(value=0x01000, label="")],
-                        alignment=ft.alignment.center,
+                        alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
                         [ft.Text("10"), ft.Radio(value=0x10000, label="")],
-                        alignment=ft.alignment.center,
+                        alignment=ft.alignment.Alignment.CENTER,
                     ),
                 ]
             ),
