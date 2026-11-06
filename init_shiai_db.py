@@ -151,8 +151,8 @@ for i, row in df.iterrows():
             weight = 0
             if pandas.notna(row["WeightCat"]):
                 raw_weight_cat = row["WeightCat"]
-                weight = int(raw_weight_cat) * 1000
-                if raw_weight_cat[0] != "+":
+                weight = abs(int(raw_weight_cat)) * 1000
+                if raw_weight_cat[0] not in ["+", "-"]:
                     raw_weight_cat = "-" + raw_weight_cat
                 weight_cat = raw_weight_cat + "kg"
         cat = f"{age_cat} {weight_cat}"
