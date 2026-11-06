@@ -4,7 +4,7 @@
    height="297mm"
    id="svg2"
    version="1.1"
-   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
    sodipodi:docname="3-64-2.svg"
    viewBox="0 0 744.09449 1052.3622"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
@@ -34,8 +34,8 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="2560"
-     inkscape:window-height="1376"
+     inkscape:window-width="1920"
+     inkscape:window-height="1137"
      id="namedview615"
      showgrid="false"
      inkscape:zoom="1.02"
@@ -64,7 +64,7 @@
      id="g9">
     <text
        style="color:#000000;font-size:22.865px;line-height:0%;font-family:Calibri;text-indent:0;text-align:end;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;text-transform:none;text-anchor:end;white-space:normal;overflow:visible;isolation:auto;mix-blend-mode:normal;solid-color:#000000"
-       y="94.128952"
+       y="108.41923"
        x="1063.502"
        font-size="22.865"
        white-space="normal"
@@ -76,7 +76,7 @@
          id="tspan13">%i-competition</tspan></text>
     <text
        style="color:#000000;font-size:22.865px;line-height:0%;font-family:Calibri;text-indent:0;text-align:end;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;text-transform:none;text-anchor:end;white-space:normal;overflow:visible;isolation:auto;mix-blend-mode:normal;solid-color:#000000"
-       y="110.79796"
+       y="125.08823"
        x="1062.219"
        font-size="22.865"
        white-space="normal"
@@ -88,7 +88,7 @@
          id="tspan17">%i-place</tspan></text>
     <text
        style="color:#000000;font-size:22.865px;line-height:0%;font-family:Calibri;-inkscape-font-specification:'Calibri, Normal';text-indent:0;text-align:end;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;text-transform:none;text-anchor:end;white-space:normal;overflow:visible;isolation:auto;mix-blend-mode:normal;solid-color:#000000"
-       y="125.07097"
+       y="139.36127"
        x="1062.219"
        font-size="22.865"
        white-space="normal"

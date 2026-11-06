@@ -4,7 +4,7 @@
    height="297mm"
    id="svg2"
    version="1.1"
-   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
    sodipodi:docname="6-32-1.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -34,12 +34,12 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:window-width="1920"
-     inkscape:window-height="1136"
+     inkscape:window-height="1137"
      id="namedview1175"
      showgrid="false"
      inkscape:zoom="0.63733417"
-     inkscape:cx="40.794925"
-     inkscape:cy="533.4721"
+     inkscape:cx="40.010408"
+     inkscape:cy="532.68759"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -2547,20 +2547,20 @@
       </g>
       <text
          style="font-size:24.93px;line-height:0%;font-family:Calibri;text-align:center;text-anchor:middle;stroke-width:1.03178"
-         y="64.226067"
-         x="1017.0545"
+         y="45.353134"
+         x="1051.655"
          font-size="24.162"
          id="text13">%i-competition</text>
       <text
          style="font-size:13.8507px;line-height:0%;font-family:Calibri;text-align:center;text-anchor:middle;stroke-width:1.03178"
-         y="80.852219"
-         x="1016.6831"
+         y="61.979267"
+         x="1051.2837"
          font-size="13.424"
          id="text15">%i-place</text>
       <text
          style="font-size:13.8507px;line-height:0%;font-family:Calibri;text-align:center;text-anchor:middle;stroke-width:1.03178"
-         y="97.257584"
-         x="1016.6831"
+         y="78.384628"
+         x="1051.2837"
          font-size="13.424"
          id="text17">%i-date</text>
       <text

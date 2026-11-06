@@ -4,7 +4,7 @@
    height="210mm"
    id="svg2"
    version="1.1"
-   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
    sodipodi:docname="3-128-3.svg"
    viewBox="0 0 1052.3622 744.09449"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
@@ -34,13 +34,13 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="2560"
-     inkscape:window-height="1376"
+     inkscape:window-width="1920"
+     inkscape:window-height="1137"
      id="namedview703"
      showgrid="false"
-     inkscape:zoom="1.0766255"
-     inkscape:cx="513.17752"
-     inkscape:cy="468.59377"
+     inkscape:zoom="0.7781312"
+     inkscape:cx="379.75601"
+     inkscape:cy="576.38095"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -63,7 +63,7 @@
      id="g9">
     <text
        style="line-height:0%;text-indent:0;text-align:end;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;text-transform:none;isolation:auto;mix-blend-mode:normal"
-       y="594.289"
+       y="617.15326"
        x="1488.835"
        color="#000000"
        font-size="22.865px"
@@ -80,7 +80,7 @@
          id="tspan13">%i-competition</tspan></text>
     <text
        style="line-height:0%;text-indent:0;text-align:end;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;text-transform:none;isolation:auto;mix-blend-mode:normal"
-       y="610.95801"
+       y="633.82227"
        x="1487.552"
        color="#000000"
        font-size="22.865px"
@@ -97,7 +97,7 @@
          id="tspan17">%i-place</tspan></text>
     <text
        style="line-height:0%;-inkscape-font-specification:'Calibri, Normal';text-indent:0;text-align:end;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;text-transform:none;isolation:auto;mix-blend-mode:normal"
-       y="625.23102"
+       y="648.09528"
        x="1487.552"
        color="#000000"
        font-size="22.865px"
