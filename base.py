@@ -30,6 +30,7 @@ class MatchApp:
         # define reusable app bar
         self.appbar_items = [
             ft.PopupMenuItem(content="Main", on_click=self.open_home()),
+            ft.PopupMenuItem(content="Reports", on_click=self.open_reports()),
             ft.PopupMenuItem(content="About", on_click=self.open_about()),
             ft.PopupMenuItem(content="Settings", on_click=self.open_settings()),
         ]
@@ -62,6 +63,9 @@ class MatchApp:
         elif troute.match("/category/:id"):
             qid = troute.id
             await self.set_category_view(qid)
+
+        elif troute.match("/reports"):
+            self.set_reports_view()
 
         elif troute.match("/about"):
             self.set_about_view()
@@ -113,6 +117,7 @@ class MatchApp:
         self.page.views.append(view)
 
     def check_status(self, cat):
+        print(f"{cat=}")
         numcomp = int(cat[2])
         pos = cat[3 : 3 + numcomp]
 
@@ -162,6 +167,39 @@ class MatchApp:
             route=f"/category/{cid}",
             scroll=ft.ScrollMode.AUTO,
         )
+        self.page.views.append(view)
+
+    def set_reports_view(self):
+
+        buttons = []
+
+        ### show category results
+        patterns = [
+            ".*",
+            "Men|Women",
+            "Men \\+.*",
+            "Women \\+.*",
+        ]
+        cmd_category_results = 'python ~/git_repos/judoshiai_utilities/result_summary.py --results-directory results/ --cat-pattern "{PATTERN}"'
+
+        for p in patterns:
+            button = ft.Button(
+                content=f"Category results {p}",
+                on_click=self.run_python_in_cwd(cmd_category_results.format(PATTERN=p)),
+                icon=ft.Icons.LIST,
+                elevation=1,
+            )
+            buttons.append(button)
+
+        ### show group results
+        cmd_group_results = "python ~/git_repos/judoshiai_utilities/result_summary.py --results-directory results/ --no-cat-results --group-results --group-cert-template urkunde/urkunde_template.svg"
+
+        ### show medal needs
+        cmd_medal_needs = "python ~/git_repos/judoshiai_utilities/medal_needs.py"
+
+        content = ft.Column(controls=buttons)
+        view_elements = [self.appbar, content]
+        view = ft.View(controls=view_elements, route="/settings")
         self.page.views.append(view)
 
     def set_about_view(self):
@@ -215,6 +253,10 @@ class MatchApp:
 
     def open_home(self):
         call = lambda e: asyncio.create_task(self.page.push_route("/"))
+        return call
+    
+    def open_reports(self):
+        call = lambda e: asyncio.create_task(self.page.push_route("/reports"))
         return call
 
     def open_about(self):
@@ -417,3 +459,8 @@ class MatchApp:
     def reset_cache(self, e):
         self.matches = {}
         self.competitors = {}
+
+    def run_python_in_cwd(self, cmd):
+        def runner(e):
+            print(cmd)
+        return runner
