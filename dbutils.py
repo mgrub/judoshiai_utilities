@@ -155,7 +155,7 @@ class JudoShiaiConnector_WEB:
         """
         return await self.select_cmd(cmd)
 
-    def set_match_result_sync(self, category_id, match_id, blue_score, white_score):
+    def set_match_result(self, category_id, match_id, blue_score, white_score):
         
         msg = {
             "msg": [
@@ -190,9 +190,6 @@ class JudoShiaiConnector_WEB:
             print(msg_ack)
             print("Did not receive MSG_ACK  ")
         ws.close()
-
-    async def set_match_result(self, *args, **kwargs):
-        return await asyncio.to_thread(self.set_match_result_sync, args, kwargs)
 
 
 if __name__ == "__main__":

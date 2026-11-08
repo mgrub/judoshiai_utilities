@@ -390,20 +390,20 @@ class MatchApp:
         else:
             return 0x00000
 
-    async def update_points(self, category_id, match_id, is_blue):
-        async def update_db_points(e):
+    def update_points(self, category_id, match_id, is_blue):
+        def update_db_points(e):
             winner_score = e.control.value
             if is_blue:
-                await self.jsc.set_match_result(
+                self.jsc.set_match_result(
                     category_id, match_id, blue_score=winner_score, white_score=0x0
                 )
             else:
-                await self.jsc.set_match_result(
+                self.jsc.set_match_result(
                     category_id, match_id, blue_score=0x0, white_score=winner_score
                 )
             # e.page.update()
 
-        return await update_db_points
+        return update_db_points
 
     def reset_points(self, category_id, match_id):
         self.jsc.set_match_result(
