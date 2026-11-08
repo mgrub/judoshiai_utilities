@@ -338,9 +338,9 @@ class MatchApp:
     def match_result_radiogroup(self, cat_id, match_number, match_info, is_blue=True):
 
         if is_blue:
-            init_value = self.convert_and_simplify_score(match_info[2])
+            init_value = match_info[2]
         else:
-            init_value = self.convert_and_simplify_score(match_info[3])
+            init_value = match_info[3]
 
         on_change = self.update_points(cat_id, match_number, is_blue)
 
@@ -348,23 +348,23 @@ class MatchApp:
             ft.Row(
                 [
                     ft.Column(
-                        [ft.Text("0"), ft.Radio(value=0x00000, label="")],
+                        [ft.Text("0"), ft.Radio(value="0", label="")],
                         alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
-                        [ft.Text("1"), ft.Radio(value=0x00010, label="")],
+                        [ft.Text("1"), ft.Radio(value="1", label="")],
                         alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
-                        [ft.Text("5"), ft.Radio(value=0x00100, label="")],
+                        [ft.Text("5"), ft.Radio(value="5", label="")],
                         alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
-                        [ft.Text("7"), ft.Radio(value=0x01000, label="")],
+                        [ft.Text("7"), ft.Radio(value="7", label="")],
                         alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
-                        [ft.Text("10"), ft.Radio(value=0x10000, label="")],
+                        [ft.Text("10"), ft.Radio(value="10", label="")],
                         alignment=ft.alignment.Alignment.CENTER,
                     ),
                 ]
@@ -379,20 +379,24 @@ class MatchApp:
         )
         return radio_container
 
-    def convert_and_simplify_score(self, score_raw):
-        score = int(score_raw)
-        if score == 10:
+    def convert_and_simplify_score(self, score_string):
+        # convert to format used by judoshiai (hex values represent IWYKH?)
+        if score_string == "10":
             return 0x10000
-        elif score == 7:
+        elif score_string == "7":
             return 0x01000
-        elif score == 1:
+        elif score_string == "5":
+            return 0x00100
+        elif score_string == "3":
             return 0x00010
+        elif score_string == "1":
+            return 0x00001
         else:
             return 0x00000
 
     def update_points(self, category_id, match_id, is_blue):
         def update_db_points(e):
-            winner_score = e.control.value
+            winner_score = self.convert_and_simplify_score(e.control.value)
             if is_blue:
                 self.jsc.set_match_result(
                     category_id, match_id, blue_score=winner_score, white_score=0x0
