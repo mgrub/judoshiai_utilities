@@ -10,7 +10,7 @@ import pandas
 class ResultUtils:
 
     def __init__(self, results_dir):
-        self.category_pattern = re.compile("^(.*?) ([\+\-\d]*)kg$")
+        self.category_pattern = re.compile("^(.*?) ([\\+\\-\\d]*)kg$")
         self.medal_points = {
             1: 10,
             2: 7,
