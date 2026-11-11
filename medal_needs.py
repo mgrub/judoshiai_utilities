@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import re
 from dbutils import JudoShiaiConnector_WEB
 
@@ -8,7 +9,7 @@ class MedalNeedUtils:
         self.jsc = JudoShiaiConnector_WEB(host=hostname)
 
     def load_categories(self):
-        categories = self.jsc.get_categories()
+        categories = asyncio.run(self.jsc.get_categories())
         return categories
 
     def write_output(self, categories):
