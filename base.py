@@ -1,4 +1,8 @@
 import asyncio
+import os
+import pathlib
+import subprocess
+import sys
 
 import flet as ft
 
@@ -172,33 +176,63 @@ class MatchApp:
     def set_reports_view(self):
 
         buttons = []
+        shiai_utils_path = sys.path[0]
+        python_path = sys.executable
+        cmd_template = "{PYTHON} {SCRIPT} {OPTIONS}"
 
         ### show category results
+        results_script = pathlib.Path.joinpath(pathlib.Path(shiai_utils_path), "result_summary.py")
         patterns = [
             ".*",
             "Men|Women",
             "Men \\+.*",
             "Women \\+.*",
         ]
-        cmd_category_results = 'python ~/git_repos/judoshiai_utilities/result_summary.py --results-directory results/ --cat-pattern "{PATTERN}"'
 
         for p in patterns:
+
+            # set specific details of subprocess call
+            options =  '--results-directory results/ --cat-pattern "{PATTERN}"'.format(PATTERN=p)
+            cmd = cmd_template.format(PYTHON=python_path, SCRIPT=results_script, OPTIONS=options)
+
+            # create button with script callback
+            print(cmd)
             button = ft.Button(
                 content=f"Category results {p}",
-                on_click=self.run_python_in_cwd(cmd_category_results.format(PATTERN=p)),
+                on_click=self.run_python_in_cwd(cmd, pipe_to="kate -i"),
                 icon=ft.Icons.LIST,
                 elevation=1,
             )
             buttons.append(button)
 
         ### show group results
-        cmd_group_results = "python ~/git_repos/judoshiai_utilities/result_summary.py --results-directory results/ --no-cat-results --group-results --group-cert-template urkunde/urkunde_template.svg"
+        options = "--results-directory results/ --no-cat-results --group-results --group-cert-template urkunde/urkunde_template.svg"
+        cmd = cmd_template.format(PYTHON=python_path, SCRIPT=results_script, OPTIONS=options)
+
+        button = ft.Button(
+            content=f"Group results",
+            on_click=self.run_python_in_cwd(cmd, pipe_to="kate -i"),
+            icon=ft.Icons.LIST,
+            elevation=1,
+        )
+        buttons.append(button)
 
         ### show medal needs
-        cmd_medal_needs = "python ~/git_repos/judoshiai_utilities/medal_needs.py"
+        medal_needs_script = pathlib.Path.joinpath(pathlib.Path(shiai_utils_path), "medal_needs.py")
+        cmd = cmd_template.format(PYTHON=python_path, SCRIPT=medal_needs_script, OPTIONS="")
 
+        button = ft.Button(
+            content=f"Medal needs",
+            on_click=self.run_python_in_cwd(cmd, pipe_to="kate -i"),
+            icon=ft.Icons.LIST,
+            elevation=1,
+        )
+        buttons.append(button)
+
+        # build page view
+        info_text = ft.Text(value="Please first export the results from JUDOSHIAI to json!")
         content = ft.Column(controls=buttons)
-        view_elements = [self.appbar, content]
+        view_elements = [self.appbar, info_text, content]
         view = ft.View(controls=view_elements, route="/settings")
         self.page.views.append(view)
 
@@ -460,7 +494,20 @@ class MatchApp:
         self.matches = {}
         self.competitors = {}
 
-    def run_python_in_cwd(self, cmd):
+    def run_python_in_cwd(self, cmd, pipe_to=None):
+        if pipe_to:
+            cmd = cmd + f" | {pipe_to}"
+        
         def runner(e):
             print(cmd)
+
+            result = subprocess.run(
+                cmd,
+                shell=True, 
+                #capture_output=True,
+                cwd=os.getcwd()
+            )
+
+            print("STDOUT:", result.stdout)
+            print("STDERR:", result.stderr)
         return runner
