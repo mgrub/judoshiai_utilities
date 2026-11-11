@@ -223,7 +223,7 @@ class MatchApp:
 
         button = ft.Button(
             content=f"Medal needs",
-            on_click=self.run_python_in_cwd(cmd, pipe_to="kate -i"),
+            on_click=self.run_python_in_cwd(cmd, open_file="medal_needs.md"),
             icon=ft.Icons.LIST,
             elevation=1,
         )
@@ -494,7 +494,7 @@ class MatchApp:
         self.matches = {}
         self.competitors = {}
 
-    def run_python_in_cwd(self, cmd, pipe_to=None):
+    def run_python_in_cwd(self, cmd, pipe_to=None, open_file=""):
         if pipe_to:
             cmd = cmd + f" | {pipe_to}"
         
@@ -504,10 +504,18 @@ class MatchApp:
             result = subprocess.run(
                 cmd,
                 shell=True, 
-                #capture_output=True,
                 cwd=os.getcwd()
             )
 
             print("STDOUT:", result.stdout)
             print("STDERR:", result.stderr)
+
+            if open_file:
+                result = subprocess.run(
+                    f"kate {open_file}",
+                    shell=True, 
+                    capture_output=False,
+                    cwd=os.getcwd()
+                )
+
         return runner
