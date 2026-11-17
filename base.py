@@ -19,10 +19,6 @@ class MatchApp:
         self.page = page
         self.page.title = "JudoShiai Match Result GUI"
 
-        # cache
-        self.matches = {}
-        self.competitors = {}
-
         # layout and style
         self.page.theme_mode = ft.ThemeMode.LIGHT
         self.char_box_size = 35
@@ -110,7 +106,13 @@ class MatchApp:
         # create rows
         resprows = ft.ResponsiveRow(columns)
 
-        view_elements = [self.appbar, resprows]
+        async def reload(e):
+            self.page.views.clear()
+            await self.set_overview_view()
+
+        refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, on_click=reload)
+
+        view_elements = [self.appbar, refresh_button, resprows]
 
         view = ft.View(
             controls=view_elements,
@@ -133,14 +135,15 @@ class MatchApp:
         return is_finished
 
     async def set_category_view(self, cid):
-
+        cat_label = (await self.jsc.get_category_info(cid))[0]
         matches = await self.jsc.get_matches(cid)
-        cat_info = await self.jsc.get_category_info(cid)
-        rows = []
+        rows = await self.match_items(cid, matches)
 
-        for match in matches:
-            mi = await self.match_item(match)
-            rows.append(mi)
+        async def reload(e):
+            self.page.views.clear()
+            await self.set_category_view(cid)
+
+        refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, on_click=reload)
 
         back_button = ft.Button(
             content="Back",
@@ -152,7 +155,7 @@ class MatchApp:
         reset_matches_button = ft.Button(
             content="CLEAR ALL MATCHES",
             icon=ft.Icons.WARNING,
-            on_click=self.reset_matches(matches),
+            on_click=self.reset_matches(cid, [match[0] for match in matches]),
             color=ft.Colors.RED,
             elevation=1,
         )
@@ -160,8 +163,8 @@ class MatchApp:
         view = ft.View(
             controls=[
                 self.appbar,
-                back_button,
-                ft.Text(cat_info[0], size=40),
+                ft.Row([back_button, refresh_button]),
+                ft.Text(cat_label, size=40),
                 *rows,
                 ft.Row(
                     [back_button, reset_matches_button],
@@ -263,13 +266,11 @@ class MatchApp:
         view = ft.View(controls=view_elements, route="/settings")
         self.page.views.append(view)
 
-    def reset_matches(self, matches):
+    def reset_matches(self, cat_id, match_numbers):
 
         def reset_cat_matches(e):
-            for m in matches:
-                category_id = m[0]
-                match_id = m[1]
-                self.reset_points(category_id, match_id)
+            for match_id in match_numbers:
+                self.reset_points(cat_id, match_id)
 
         return reset_cat_matches
 
@@ -305,91 +306,53 @@ class MatchApp:
         e.control.bgcolor = ft.Colors.LIGHT_BLUE_50 if e.data == "true" else ""
         e.control.update()
 
-    async def refresh_match_item(self, match):
-        cat_id = match[0]
-        match_number = match[1]
+    async def match_items(self, cat_id, matches):
+        comp_ids = {match[i] for match in matches for i in (1, 2)}
+        comps = {comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)}
 
-        # retrieve match informations
-        match_info = await self.jsc.get_match_info(cat_id, match_number)
-        if cat_id in self.matches.keys():
-            self.matches[cat_id][match_number] = match_info
-        else:
-            self.matches[cat_id] = {match_number: match_info}
+        items = []
+        for match_number, *match_info in matches:
+            blue_info = comps[match_info[0]]
+            white_info = comps[match_info[1]]
 
-        # update info about competitor blue
-        blue_info = await self.jsc.get_competitor_info(match_info[0])
-        self.competitors[match_info[0]] = blue_info
+            async def reload(e):
+                self.page.views.clear()
+                await self.set_category_view(cat_id)
 
-        # update info about competitor white
-        white_info = await self.jsc.get_competitor_info(match_info[1])
-        self.competitors[match_info[1]] = white_info
+            refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, on_click=reload)
+            blue_box = self.competitor_box(blue_info, color=ft.Colors.WHITE)
+            blue_points = self.match_result_radiogroup(
+                cat_id, match_number, match_info, is_blue=True
+            )
+            white_box = self.competitor_box(white_info, color=ft.Colors.BLUE_300)
+            white_points = self.match_result_radiogroup(
+                cat_id, match_number, match_info, is_blue=False
+            )
 
-        return match_info, blue_info, white_info
+            opacity = 1.0
+            if blue_info[0] == "empty" or white_info[0] == "empty":
+                opacity = 0.3
 
-    async def match_item(self, match):
-
-        cat_id = match[0]
-        match_number = match[1]
-
-        if (
-            cat_id in self.matches.keys()
-            and match_number in self.matches[cat_id].keys()
-        ):
-            match_info = self.matches[cat_id][match_number]
-            blue_info = self.competitors[match_info[0]]
-            white_info = self.competitors[match_info[1]]
-        else:
-            match_info, blue_info, white_info = await self.refresh_match_item(match)
-
-        async def refresh_callback(e):
-            # this is a bit quick'n'dirty, but at least it works :-)
-            match_info, blue_info, white_info = await self.refresh_match_item(match)
-
-            blue_box.content.controls[0].value = f"{blue_info[1]} {blue_info[0]}"
-            blue_box.content.controls[1].value = f"({blue_info[2]})"
-
-            white_box.content.controls[0].value = f"{white_info[1]} {white_info[0]}"
-            white_box.content.controls[1].value = f"({white_info[2]})"
-
-            self.page.update()
-
-        refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, on_click=refresh_callback)
-        blue_box = self.competitor_box(blue_info, color=ft.Colors.WHITE)
-        blue_points = self.match_result_radiogroup(
-            cat_id, match_number, match_info, is_blue=True
-        )
-
-        white_box = self.competitor_box(white_info, color=ft.Colors.BLUE_300)
-        white_points = self.match_result_radiogroup(
-            cat_id, match_number, match_info, is_blue=False
-        )
-
-        opacity = 1.0
-        if blue_info[0] == "empty" or white_info[0] == "empty":
-            opacity = 0.3
-
-        content = [
-            ft.Container(
-                content=ft.Column([ft.Text(match[1], size=22), refresh_button]),
-                col={"sm": 12, "md": 1, "xxl": 0.5},
-                opacity=opacity,
-            ),
-            ft.Container(
-                content=ft.Row([blue_box, blue_points]),
-                col={"sm": 12, "md": 10, "xxl": 5},
-                opacity=opacity,
-            ),
-            ft.Container(
-                content=ft.Row([white_box, white_points]),
-                col={"sm": 12, "md": 10, "xxl": 5},
-                opacity=opacity,
-            ),
-            ft.Divider(),
-        ]
-
-        item = ft.ResponsiveRow(controls=content, alignment=ft.MainAxisAlignment.END)
-
-        return item
+            content = [
+                ft.Container(
+                    content=ft.Column([ft.Text(match_number, size=22), refresh_button]),
+                    col={"sm": 12, "md": 1, "xxl": 0.5},
+                    opacity=opacity,
+                ),
+                ft.Container(
+                    content=ft.Row([blue_box, blue_points]),
+                    col={"sm": 12, "md": 10, "xxl": 5},
+                    opacity=opacity,
+                ),
+                ft.Container(
+                    content=ft.Row([white_box, white_points]),
+                    col={"sm": 12, "md": 10, "xxl": 5},
+                    opacity=opacity,
+                ),
+                ft.Divider(),
+            ]
+            items.append(ft.ResponsiveRow(controls=content, alignment=ft.MainAxisAlignment.END))
+        return items
 
     def competitor_box(self, info, color=ft.Colors.BLUE_300):
         # if you change something here, please also check `refresh_callback`
@@ -489,10 +452,6 @@ class MatchApp:
         self.jsc.set_match_result(
             category_id, match_id, blue_score=0x0, white_score=0x0
         )
-
-    def reset_cache(self, e):
-        self.matches = {}
-        self.competitors = {}
 
     def run_python_in_cwd(self, cmd, pipe_to=None, open_file=""):
         if pipe_to:

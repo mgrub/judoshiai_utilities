@@ -133,23 +133,22 @@ class JudoShiaiConnector_WEB:
         """
         return await self.select_cmd(cmd)
 
-    async def get_competitor_info(self, cid):
+    async def get_competitors_info(self, cids: set[str]):
         cmd = f"""
-        SELECT last, first, club, birthyear, country
+        SELECT "index", last, first, club, birthyear, country
         FROM "main"."competitors"
-        WHERE "index" == {cid} ;
+        WHERE "index" IN ("{"\", \"".join(cids)}") ;
         """
-        
-        if cid == "0":
-            return ["unknown", "", "", "", ""]
-        elif cid == "1":
-            return ["empty", "", "", "", ""]
-        else:
-            return (await self.select_cmd(cmd))[0]
+        comps = await self.select_cmd(cmd)
+        if "0" in cids:
+            comps.append(["0", "unknown", "", "", "", ""])
+        if "1" in cids:
+            comps.append(["1", "empty", "", "", "", ""])
+        return comps
 
     async def get_matches(self, category_id):
         cmd = f"""
-        SELECT category, number, blue_points, white_points
+        SELECT number, blue, white, blue_points, white_points
         FROM "main"."matches" 
         WHERE category == {category_id} ;
         """
@@ -202,5 +201,5 @@ if __name__ == "__main__":
     jsc_online = JudoShiaiConnector_WEB()
     print(jsc_online.get_categories())
     print(jsc_online.get_matches(10014))
-    print(jsc_online.get_competitor_info(29))
+    print(jsc_online.get_competitors_info({29}))
     #jsc_online.set_match_result(10014, 1, 0x10000, 0x01000) 
