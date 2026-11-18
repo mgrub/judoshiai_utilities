@@ -419,7 +419,7 @@ class MatchApp:
         return radio_container
 
     def convert_and_simplify_score(self, score_string):
-        # convert to format used by judoshiai (hex values represent IWYKH?)
+        # convert to format used by judoshiai (hex values represent IWYKS?)
         if score_string == "10":
             return 0x10000
         elif score_string == "7":

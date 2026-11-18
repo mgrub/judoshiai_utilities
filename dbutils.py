@@ -155,13 +155,12 @@ class JudoShiaiConnector_WEB:
         return await self.select_cmd(cmd)
 
     def set_match_result(self, category_id, match_id, blue_score, white_score):
-        
         msg = {
             "msg": [
                 5,                 # src_ip_addr, is mostly "5"
                 2,                 # type MSG_RESULT
-                1,                 # sender
-                7777,              # begin sublist ???
+                1,                 # length (unused when sending to Judoshiai)
+                7777,              # sender
                 0,                 # int tatami
                 int(category_id),  # int category
                 int(match_id),     # int match
@@ -173,7 +172,18 @@ class JudoShiaiConnector_WEB:
                 0,                 # char blue_hansokumake
                 0,                 # char white_hansokumake
                 0,                 # int legend
-                0,                 # end sublist ???
+            ]
+        } if not blue_score == white_score == 0 else {
+            "msg": [
+                5,                 # src_ip_addr, is mostly "5"
+                5,                 # type MSG_SET_POINTS
+                1,                 # length (unused when sending to Judoshiai)
+                7777,              # sender
+                int(category_id),  # int category
+                int(match_id),     # int match
+                0,                 # system (unused when sending to Judoshiai)
+                0,                 # int blue_score (long int of hex IWYKS)
+                0,                 # int white_score (long int of hex IWYKS)
             ]
         }
 
@@ -184,10 +194,12 @@ class JudoShiaiConnector_WEB:
         ws.connect(f"ws://{self.host}:{self.port_ws}")
         ws.send(msg_json)
 
-        msg_ack = json.loads(ws.recv())
-        if msg_ack["msg"][1] != 3:
-            print(msg_ack)
-            print("Did not receive MSG_ACK  ")
+        if not blue_score == white_score == 0:
+            # for some reason MSG_ACK is not send if message type is MSG_SET_POINTS
+            msg_ack = json.loads(ws.recv())
+            if msg_ack["msg"][1] != 3:
+                print(msg_ack)
+                print("Did not receive MSG_ACK  ")
         ws.close()
 
 
