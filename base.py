@@ -3,10 +3,12 @@ import os
 import pathlib
 import subprocess
 import sys
+from typing import Any, Awaitable, Callable
 
 import flet as ft
 
 from dbutils import JudoShiaiConnector_WEB
+from ui_utils.match_ui_element import Match
 
 
 class MatchApp:
@@ -309,155 +311,68 @@ class MatchApp:
         e.control.bgcolor = ft.Colors.LIGHT_BLUE_50 if e.data == "true" else ""
         e.control.update()
 
-    def update_match_items(self, cat_id, items: list[dict]):
+    def update_match_items(self, cat_id, items: list[Match]):
         async def update_function(e):
             matches = await self.jsc.get_matches(cat_id)
             matches = {match: match_info for match, *match_info in matches}
-            if {*matches.keys()} != {item["match"] for item in items}:
+            if {*matches.keys()} != {item.get_match_number() for item in items}:
                 self.page.views.clear()
                 await self.set_category_view(cat_id)
                 return
-            comp_ids = {match[i] for match in matches.values() for i in (1, 2)}
+
+            comp_ids = {match[i] for match in matches.values() for i in (0, 1)}
             comps = {comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)}
             for item in items:
-                b_info = comps[matches[item["match"]][0]]
-                w_info = comps[matches[item["match"]][1]]
-                b_points = matches[item["match"]][2]
-                w_points = matches[item["match"]][3]
-                item["blue_box"].content.controls[0].value = f"{b_info[1]} {b_info[0]}"
-                item["blue_box"].content.controls[1].value = f"({b_info[2]})"
-                item["white_box"].content.controls[0].value = f"{w_info[1]} {w_info[0]}"
-                item["white_box"].content.controls[1].value = f"({w_info[2]})"
-                item["blue_points"].content.value = b_points
-                item["white_points"].content.value = w_points
+                match_number = item.get_match_number()
+                b_info = comps[matches[match_number][0]]
+                w_info = comps[matches[match_number][1]]
+                b_points = matches[match_number][2]
+                w_points = matches[match_number][3]
+                item.update_comp(b_info[1], b_info[0], b_info[2], True)
+                item.update_comp(w_info[1], w_info[0], w_info[2], False)
+                item.update_points(b_points, True)
+                item.update_points(w_points, False)
             self.page.update()
+
         return update_function
 
     async def match_items(self, cat_id, matches):
         comp_ids = {match[i] for match in matches for i in (1, 2)}
         comps = {comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)}
 
-        rows = []
-        refresh_buttons: list[ft.IconButton] = []
-        items: list[dict] = []
+        match_items: list[Match] = []
         for match_number, *match_info in matches:
             blue_info = comps[match_info[0]]
             white_info = comps[match_info[1]]
 
-            refresh_button = ft.IconButton(icon=ft.Icons.REFRESH)
-            blue_box = self.competitor_box(blue_info, color=ft.Colors.WHITE)
-            blue_points = self.match_result_radiogroup(
-                cat_id, match_number, match_info, is_blue=True
+            match_items.append(Match(
+                match_number,
+                blue_info[1],
+                blue_info[0],
+                blue_info[2],
+                match_info[2],
+                white_info[1],
+                white_info[0],
+                white_info[2],
+                match_info[3]
+            ))
+
+        update_function = self.update_match_items(cat_id, match_items)
+        for match in match_items:
+            match.set_refresh_function(update_function)
+            match.set_on_change_function(
+                self.update_points(cat_id, match, True, update_function),
+                True
             )
-            white_box = self.competitor_box(white_info, color=ft.Colors.BLUE_300)
-            white_points = self.match_result_radiogroup(
-                cat_id, match_number, match_info, is_blue=False
+            match.set_on_change_function(
+                self.update_points(cat_id, match, False, update_function),
+                False
             )
 
-            opacity = 1.0
-            if blue_info[0] == "empty" or white_info[0] == "empty":
-                opacity = 0.3
-
-            content = [
-                ft.Container(
-                    content=ft.Column([ft.Text(match_number, size=22), refresh_button]),
-                    col={"sm": 12, "md": 1, "xxl": 0.5},
-                    opacity=opacity,
-                ),
-                ft.Container(
-                    content=ft.Row([blue_box, blue_points]),
-                    col={"sm": 12, "md": 10, "xxl": 5},
-                    opacity=opacity,
-                ),
-                ft.Container(
-                    content=ft.Row([white_box, white_points]),
-                    col={"sm": 12, "md": 10, "xxl": 5},
-                    opacity=opacity,
-                ),
-                ft.Divider(),
-            ]
-            rows.append(ft.ResponsiveRow(controls=content, alignment=ft.MainAxisAlignment.END))
-            refresh_buttons.append(refresh_button)
-            items.append({
-                "blue_box": blue_box,
-                "blue_points": blue_points,
-                "white_box": white_box,
-                "white_points": white_points,
-                "match": match_number
-            })
-
-        update_function = self.update_match_items(cat_id, items)
-        for refresh_button in refresh_buttons:
-            refresh_button.on_click = update_function
-
-        return rows
-
-    def competitor_box(self, info, color=ft.Colors.BLUE_300):
-        # if you change something here, please also check `refresh_callback`
-
-        name = f"{info[1]} {info[0]}"
-        club = f"({info[2]})"
-
-        box = ft.Container(
-            content=ft.Column([ft.Text(name, size=30), ft.Text(club, size=22)]),
-            border=ft.border.Border().all(1, ft.Colors.GREY_300),
-            margin=10,
-            padding=10,
-            alignment=ft.alignment.Alignment.CENTER_LEFT,
-            bgcolor=color,
-            height=100,
-            border_radius=10,
-            expand=3,
-        )
-
-        return box
-
-    def match_result_radiogroup(self, cat_id, match_number, match_info, is_blue=True):
-
-        if is_blue:
-            init_value = match_info[2]
-        else:
-            init_value = match_info[3]
-
-        on_change = self.update_points(cat_id, match_number, is_blue)
-
-        radio_group = ft.RadioGroup(
-            ft.Row(
-                [
-                    ft.Column(
-                        [ft.Text("0"), ft.Radio(value="0", label="")],
-                        alignment=ft.alignment.Alignment.CENTER,
-                    ),
-                    ft.Column(
-                        [ft.Text("1"), ft.Radio(value="1", label="")],
-                        alignment=ft.alignment.Alignment.CENTER,
-                    ),
-                    ft.Column(
-                        [ft.Text("5"), ft.Radio(value="5", label="")],
-                        alignment=ft.alignment.Alignment.CENTER,
-                    ),
-                    ft.Column(
-                        [ft.Text("7"), ft.Radio(value="7", label="")],
-                        alignment=ft.alignment.Alignment.CENTER,
-                    ),
-                    ft.Column(
-                        [ft.Text("10"), ft.Radio(value="10", label="")],
-                        alignment=ft.alignment.Alignment.CENTER,
-                    ),
-                ]
-            ),
-            value=init_value,
-            on_change=on_change,
-        )
-
-        radio_container = ft.Container(
-            content=radio_group,
-            expand=1,
-        )
-        return radio_container
+        return match_items
 
     def convert_and_simplify_score(self, score_string):
-        # convert to format used by judoshiai (hex values represent IWYKS?)
+        # convert to format used by judoshiai (hex values represent IWYKS)
         if score_string == "10":
             return 0x10000
         elif score_string == "7":
@@ -471,18 +386,24 @@ class MatchApp:
         else:
             return 0x00000
 
-    def update_points(self, category_id, match_id, is_blue):
-        def update_db_points(e):
-            winner_score = self.convert_and_simplify_score(e.control.value)
+    def update_points(
+        self,
+        category_id: str,
+        match: Match,
+        is_blue: bool,
+        refresh: Callable[[Any], Awaitable[None]]
+    ) -> Callable[[Any], None]:
+        async def update_db_points(e):
+            score = self.convert_and_simplify_score(match.get_points(is_blue))
             if is_blue:
                 self.jsc.set_match_result(
-                    category_id, match_id, blue_score=winner_score, white_score=0x0
+                    category_id, match.get_match_number(), blue_score=score, white_score=0x0
                 )
             else:
                 self.jsc.set_match_result(
-                    category_id, match_id, blue_score=0x0, white_score=winner_score
+                    category_id, match.get_match_number(), blue_score=0x0, white_score=score
                 )
-            # e.page.update()
+            await refresh(None)
 
         return update_db_points
 
