@@ -140,6 +140,7 @@ class MatchApp:
         rows = await self.match_items(cid, matches)
 
         async def reload(e):
+            # hard reload
             self.page.views.clear()
             await self.set_category_view(cid)
 
@@ -167,7 +168,7 @@ class MatchApp:
                 ft.Text(cat_label, size=40),
                 *rows,
                 ft.Row(
-                    [back_button, reset_matches_button],
+                    [back_button, refresh_button, reset_matches_button],
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 ),
             ],
@@ -268,9 +269,11 @@ class MatchApp:
 
     def reset_matches(self, cat_id, match_numbers):
 
-        def reset_cat_matches(e):
-            for match_id in match_numbers:
+        async def reset_cat_matches(e):
+            for match_id in sorted(match_numbers,reverse=True):
                 self.reset_points(cat_id, match_id)
+            self.page.views.clear()
+            await self.set_category_view(cat_id)
 
         return reset_cat_matches
 
@@ -306,20 +309,42 @@ class MatchApp:
         e.control.bgcolor = ft.Colors.LIGHT_BLUE_50 if e.data == "true" else ""
         e.control.update()
 
+    def update_match_items(self, cat_id, items: list[dict]):
+        async def update_function(e):
+            matches = await self.jsc.get_matches(cat_id)
+            matches = {match: match_info for match, *match_info in matches}
+            if {*matches.keys()} != {item["match"] for item in items}:
+                self.page.views.clear()
+                await self.set_category_view(cat_id)
+                return
+            comp_ids = {match[i] for match in matches.values() for i in (1, 2)}
+            comps = {comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)}
+            for item in items:
+                b_info = comps[matches[item["match"]][0]]
+                w_info = comps[matches[item["match"]][1]]
+                b_points = matches[item["match"]][2]
+                w_points = matches[item["match"]][3]
+                item["blue_box"].content.controls[0].value = f"{b_info[1]} {b_info[0]}"
+                item["blue_box"].content.controls[1].value = f"({b_info[2]})"
+                item["white_box"].content.controls[0].value = f"{w_info[1]} {w_info[0]}"
+                item["white_box"].content.controls[1].value = f"({w_info[2]})"
+                item["blue_points"].content.value = b_points
+                item["white_points"].content.value = w_points
+            self.page.update()
+        return update_function
+
     async def match_items(self, cat_id, matches):
         comp_ids = {match[i] for match in matches for i in (1, 2)}
         comps = {comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)}
 
-        items = []
+        rows = []
+        refresh_buttons: list[ft.IconButton] = []
+        items: list[dict] = []
         for match_number, *match_info in matches:
             blue_info = comps[match_info[0]]
             white_info = comps[match_info[1]]
 
-            async def reload(e):
-                self.page.views.clear()
-                await self.set_category_view(cat_id)
-
-            refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, on_click=reload)
+            refresh_button = ft.IconButton(icon=ft.Icons.REFRESH)
             blue_box = self.competitor_box(blue_info, color=ft.Colors.WHITE)
             blue_points = self.match_result_radiogroup(
                 cat_id, match_number, match_info, is_blue=True
@@ -351,8 +376,21 @@ class MatchApp:
                 ),
                 ft.Divider(),
             ]
-            items.append(ft.ResponsiveRow(controls=content, alignment=ft.MainAxisAlignment.END))
-        return items
+            rows.append(ft.ResponsiveRow(controls=content, alignment=ft.MainAxisAlignment.END))
+            refresh_buttons.append(refresh_button)
+            items.append({
+                "blue_box": blue_box,
+                "blue_points": blue_points,
+                "white_box": white_box,
+                "white_points": white_points,
+                "match": match_number
+            })
+
+        update_function = self.update_match_items(cat_id, items)
+        for refresh_button in refresh_buttons:
+            refresh_button.on_click = update_function
+
+        return rows
 
     def competitor_box(self, info, color=ft.Colors.BLUE_300):
         # if you change something here, please also check `refresh_callback`
