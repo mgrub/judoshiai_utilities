@@ -85,11 +85,11 @@ class MatchApp:
 
         categories = await self.jsc.get_categories()
 
-        columns = []
+        columns = {}
 
         for cat in categories:
             is_finished = self.check_status(cat)
-            color = ft.Colors.LIGHT_BLUE_100 if is_finished else ft.Colors.WHITE
+            color = ft.Colors.LIGHT_BLUE_100 if is_finished else ft.Colors.GREY
             item = ft.Container(
                 content=ft.Text(cat[1], size=30),
                 col={"sm": 6, "md": 4, "xl": 2},
@@ -103,10 +103,23 @@ class MatchApp:
                 border_radius=10,
             )
 
-            columns.append(item)
+            abstract_cat = cat[1][:cat[1].rfind("-") if cat[1].rfind("-") != -1 else cat[1].rfind("+")]
+            columns.setdefault(abstract_cat, []).append(item)
 
         # create rows
-        resprows = ft.ResponsiveRow(columns)
+        resprows = []
+        for abstract_cat, cols in columns.items():
+            resprows.append(ft.Divider())
+            row = ft.ResponsiveRow(cols)
+            def construct_close_open(row):
+                def close_open(e):
+                    row.visible = not row.visible
+                    self.page.update()
+                return close_open
+            button = ft.Button("hide/ show", on_click=construct_close_open(row))
+            resprows.append(ft.Row([ft.Text(abstract_cat, size=30), button]))
+            resprows.append(row)
+        resprows.append(ft.Divider())
 
         async def reload(e):
             self.page.views.clear()
@@ -114,12 +127,12 @@ class MatchApp:
 
         refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, on_click=reload)
 
-        view_elements = [self.appbar, refresh_button, resprows]
+        view_elements = [self.appbar, refresh_button, *resprows]
 
         view = ft.View(
             controls=view_elements,
             route="/",
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.START,
             scroll=ft.ScrollMode.AUTO,
         )
         self.page.views.append(view)
