@@ -235,9 +235,22 @@ class MatchApp:
         )
         buttons.append(button)
 
+        input_field = ft.TextField(hint_text="regex for categories")
+        def generate_report(e):
+            pat = input_field.value
+            options =  '--results-directory results/ --cat-pattern "{PATTERN}"'.format(PATTERN=pat)
+            cmd = cmd_template.format(PYTHON=python_path, SCRIPT=results_script, OPTIONS=options)
+            self.run_python_in_cwd(cmd, pipe_to="kate -i")(e)
+        submit_button = ft.Button(
+            content=f"Submit regex for cat results",
+            on_click=generate_report,
+            icon=ft.Icons.LIST,
+            elevation=1,
+        )
+
         # build page view
         info_text = ft.Text(value="Please first export the results from JUDOSHIAI to json!")
-        content = ft.Column(controls=buttons)
+        content = ft.Column(controls=[*buttons, ft.Row([input_field, submit_button])])
         view_elements = [self.appbar, info_text, content]
         view = ft.View(controls=view_elements, route="/settings")
         self.page.views.append(view)

@@ -182,8 +182,8 @@ class JudoShiaiConnector_WEB:
                 int(category_id),  # int category
                 int(match_id),     # int match
                 0,                 # system (unused when sending to Judoshiai)
-                0,                 # int blue_score (long int of hex IWYKS)
-                0,                 # int white_score (long int of hex IWYKS)
+                0,                 # int blue_points
+                0,                 # int white_points
             ]
         }
 
