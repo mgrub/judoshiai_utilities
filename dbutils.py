@@ -109,6 +109,24 @@ class JudoShiaiConnector_WEB:
         """
         return await self.select_cmd(cmd)
 
+    async def get_categories_extended_info(self):
+        cmd = """
+        SELECT categories."index", category, (
+                SELECT COUNT(*) FROM "main"."matches" WHERE category == categories."index"
+            ) AS match_count, system, (
+                SELECT COUNT(*) FROM "main"."matches" WHERE
+                    category == categories."index" AND (
+                        (deleted & 1) == 0 AND
+                        blue >= 9 AND
+                        white >= 9 AND
+                        blue_points == 0 AND
+                        white_points == 0
+                    )
+            ) AS count_open_matches
+        FROM categories ;
+        """
+        return await self.select_cmd(cmd)
+
     async def get_category_info(self, cid):
         cmd = f"""
         SELECT category, numcomp, pos1, pos2, pos3, pos4

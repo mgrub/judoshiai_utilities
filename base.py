@@ -83,13 +83,27 @@ class MatchApp:
     async def set_overview_view(self):
         self.solution_found = []
 
-        categories = await self.jsc.get_categories()
+        categories = await self.jsc.get_categories_extended_info()
+        # category status is int with binary meaning:
+        # bit with val 1: MATCH_EXISTS
+        # bit with val 2: MATCH_MATCHED
+        # bit with val 4: MATCH_UNMATCHED    -> True <=> 
+        # Es gibt ein Match m von category, für das gilt:
+        #     (m.deleted & DELETED) == 0 &&                             <- DELETED = 0x01
+        #     m.blue >= COMPETITOR &&                                   <- COMPETITOR = 9
+        #     m.white >= COMPETITOR &&
+        #     m.blue_points == 0 &&
+        #     m.white_points == 0 &&
+        #     (avl_get_competitor_status(m.blue) & HANSOKUMAKE) == 0 && <- HANSOKUMAKE = 0x02
+        #     (avl_get_competitor_status(m.white) & HANSOKUMAKE) == 0
+        # bit with val 8: ?
+        # bit with val 16: REAL_MATCH_EXISTS
+        # bit with val 32: SYSTEM_DEFINED    -> True <=> category.system != 0
 
         columns = {}
 
         for cat in categories:
-            is_finished = self.check_status(cat)
-            color = ft.Colors.LIGHT_BLUE_100 if is_finished else ft.Colors.GREY
+            color = self.get_match_color(cat)
             item = ft.Container(
                 content=ft.Text(cat[1], size=30),
                 col={"sm": 6, "md": 4, "xl": 2},
@@ -137,17 +151,13 @@ class MatchApp:
         )
         self.page.views.append(view)
 
-    def check_status(self, cat):
+    def get_match_color(self, cat):
         print(f"{cat=}")
-        numcomp = int(cat[2])
-        pos = cat[3 : 3 + numcomp]
-
-        if numcomp > 0:
-            is_finished = False if 0 in pos else True
-        else:
-            is_finished = False
-
-        return is_finished
+        if cat[3] != "0" and cat[4] == "0":  # system defined and not match unmatched
+            return ft.Colors.GREEN
+        if cat[2] != "0":
+            return ft.Colors.LIGHT_BLUE
+        return ft.Colors.GREY
 
     async def set_category_view(self, cid):
         cat_label = (await self.jsc.get_category_info(cid))[0]
@@ -421,6 +431,8 @@ class MatchApp:
     ) -> Callable[[Any], None]:
         async def update_db_points(e):
             score = self.convert_and_simplify_score(match.get_points(is_blue))
+            if score == 0:
+                return
             if is_blue:
                 self.jsc.set_match_result(
                     category_id, match.get_match_number(), blue_score=score, white_score=0x0
