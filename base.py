@@ -360,15 +360,19 @@ class MatchApp:
 
     def update_match_items(self, cat_id, items: list[Match]):
         async def update_function(e):
+            # get all matches from judoshiai
             matches = await self.jsc.get_matches(cat_id)
             matches = {match: match_info for match, *match_info in matches}
+            # if the matches changed too much, reload completely
             if {*matches.keys()} != {item.get_match_number() for item in items}:
                 self.page.views.clear()
                 await self.set_category_view(cat_id)
                 return
 
+            # get all competitors of the new matches
             comp_ids = {match[i] for match in matches.values() for i in (0, 1)}
             comps = {comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)}
+            # update all match info displayed
             for item in items:
                 match_number = item.get_match_number()
                 b_info = comps[matches[match_number][0]]
@@ -384,9 +388,11 @@ class MatchApp:
         return update_function
 
     async def match_items(self, cat_id, matches):
+        # get all competitors for the matches
         comp_ids = {match[i] for match in matches for i in (1, 2)}
         comps = {comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)}
 
+        # add a Match element to the UI for every match
         match_items: list[Match] = []
         for match_number, *match_info in matches:
             blue_info = comps[match_info[0]]
@@ -404,6 +410,7 @@ class MatchApp:
                 match_info[3]
             ))
 
+        # set refresh function and the on change functions for the Match objects
         update_function = self.update_match_items(cat_id, match_items)
         for match in match_items:
             match.set_refresh_function(update_function)
