@@ -85,9 +85,14 @@ class MatchApp:
 
         categories = await self.jsc.get_categories_extended_info()
         # category status is int with binary meaning:
-        # bit with val 1: MATCH_EXISTS
-        # bit with val 2: MATCH_MATCHED
-        # bit with val 4: MATCH_UNMATCHED    -> True <=> 
+        # bit with val 1: MATCH_EXISTS       -> TRUE <=> Es gibt ein Match von category.
+        # bit with val 2: MATCH_MATCHED      -> True <=>
+        # Es gibt ein Match m von category, für das gilt:
+        #     (m.deleted & DELETED) == 0 &&                             <- DELETED = 0x01
+        #     (m.blue_points != 0 || m.white_points != 0) &&
+        #     m.blue >= COMPETITOR &&                                   <- COMPETITOR = 9
+        #     m.white >= COMPETITOR
+        # bit with val 4: MATCH_UNMATCHED    -> True <=>
         # Es gibt ein Match m von category, für das gilt:
         #     (m.deleted & DELETED) == 0 &&                             <- DELETED = 0x01
         #     m.blue >= COMPETITOR &&                                   <- COMPETITOR = 9
@@ -99,6 +104,10 @@ class MatchApp:
         # bit with val 8: ?
         # bit with val 16: REAL_MATCH_EXISTS
         # bit with val 32: SYSTEM_DEFINED    -> True <=> category.system != 0
+        #
+        # category completed if SYSTEM_DEFINED AND NOT MATCH_UNMATCHED
+        # category started if MATCH_MATCHED
+        # category drawn if MATCH_EXISTS
 
         columns = {}
 
@@ -153,10 +162,12 @@ class MatchApp:
 
     def get_match_color(self, cat):
         print(f"{cat=}")
-        if cat[3] != "0" and cat[4] == "0":  # system defined and not match unmatched
+        if cat[4] != "0" and cat[5] == "0":  # system defined and not match unmatched
             return ft.Colors.GREEN
-        if cat[2] != "0":
-            return ft.Colors.LIGHT_BLUE
+        if cat[3] != "0":  # match_matched
+            return ft.Colors.ORANGE
+        if cat[2] != "0":  # match_exists
+            return ft.Colors.YELLOW
         return ft.Colors.GREY
 
     async def set_category_view(self, cid):

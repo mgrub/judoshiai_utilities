@@ -113,7 +113,15 @@ class JudoShiaiConnector_WEB:
         cmd = """
         SELECT categories."index", category, (
                 SELECT COUNT(*) FROM "main"."matches" WHERE category == categories."index"
-            ) AS match_count, system, (
+            ) AS match_count, (
+                SELECT COUNT(*) FROM "main"."matches" WHERE
+                    category == categories."index" AND (
+                        (deleted & 1) == 0 AND
+                        blue >= 9 AND
+                        white >= 9 AND
+                        (blue_points != 0 OR white_points != 0)
+                    )
+            ) AS count_matched_matches, system, (
                 SELECT COUNT(*) FROM "main"."matches" WHERE
                     category == categories."index" AND (
                         (deleted & 1) == 0 AND
