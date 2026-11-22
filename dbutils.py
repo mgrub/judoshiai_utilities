@@ -182,7 +182,6 @@ class JudoShiaiConnector_WEB:
 
     def set_match_result(self, category_id, match_id, blue_score=0x0, white_score=0x0, blue_vote=0, white_vote=0):
 
-        print(blue_score, white_score, blue_vote, white_vote)
         if not blue_score == white_score == blue_vote == white_vote == 0: 
             # use MSG_RESULT for setting winner
             msg = {
