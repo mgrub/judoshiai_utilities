@@ -104,19 +104,19 @@ class Match(ft.ResponsiveRow):
                         alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
-                        [ft.Text("1"), ft.Radio(value="1", label="")],
+                        [ft.Text("H"), ft.Radio(value="1", label="")],
                         alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
-                        [ft.Text("5"), ft.Radio(value="5", label="")],
+                        [ft.Text("Y"), ft.Radio(value="5", label="")],
                         alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
-                        [ft.Text("7"), ft.Radio(value="7", label="")],
+                        [ft.Text("W"), ft.Radio(value="7", label="")],
                         alignment=ft.alignment.Alignment.CENTER,
                     ),
                     ft.Column(
-                        [ft.Text("10"), ft.Radio(value="10", label="")],
+                        [ft.Text("I"), ft.Radio(value="10", label="")],
                         alignment=ft.alignment.Alignment.CENTER,
                     )
                 ]

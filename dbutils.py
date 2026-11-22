@@ -180,38 +180,45 @@ class JudoShiaiConnector_WEB:
         """
         return await self.select_cmd(cmd)
 
-    def set_match_result(self, category_id, match_id, blue_score, white_score):
-        msg = {
-            "msg": [
-                5,                 # src_ip_addr, is mostly "5"
-                2,                 # type MSG_RESULT
-                1,                 # length (unused when sending to Judoshiai)
-                7777,              # sender
-                0,                 # int tatami
-                int(category_id),  # int category
-                int(match_id),     # int match
-                0,                 # int minutes
-                int(blue_score),   # int blue_score (long int of hex IWYKS)
-                int(white_score),  # int white_score (long int of hex IWYKS)
-                0,                 # char blue_vote
-                0,                 # char white_vote
-                0,                 # char blue_hansokumake
-                0,                 # char white_hansokumake
-                0,                 # int legend
-            ]
-        } if not blue_score == white_score == 0 else {
-            "msg": [
-                5,                 # src_ip_addr, is mostly "5"
-                5,                 # type MSG_SET_POINTS
-                1,                 # length (unused when sending to Judoshiai)
-                7777,              # sender
-                int(category_id),  # int category
-                int(match_id),     # int match
-                0,                 # system (unused when sending to Judoshiai)
-                0,                 # int blue_points
-                0,                 # int white_points
-            ]
-        }
+    def set_match_result(self, category_id, match_id, blue_score=0x0, white_score=0x0, blue_vote=0, white_vote=0):
+
+        print(blue_score, white_score, blue_vote, white_vote)
+        if not blue_score == white_score == blue_vote == white_vote == 0: 
+            # use MSG_RESULT for setting winner
+            msg = {
+                "msg": [
+                    5,                 # src_ip_addr, is mostly "5"
+                    2,                 # type MSG_RESULT
+                    1,                 # length (unused when sending to Judoshiai)
+                    7777,              # sender
+                    0,                 # int tatami
+                    int(category_id),  # int category
+                    int(match_id),     # int match
+                    0,                 # int minutes
+                    int(blue_score),   # int blue_score (long int of hex IWYKS)
+                    int(white_score),  # int white_score (long int of hex IWYKS)
+                    blue_vote,         # char blue_vote
+                    white_vote,        # char white_vote
+                    0,                 # char blue_hansokumake
+                    0,                 # char white_hansokumake
+                    0,                 # int legend
+                ]
+            }
+        else:
+            # use MSG_SET_POINTS to reset match
+            msg = {
+                "msg": [
+                    5,                 # src_ip_addr, is mostly "5"
+                    5,                 # type MSG_SET_POINTS
+                    1,                 # length (unused when sending to Judoshiai)
+                    7777,              # sender
+                    int(category_id),  # int category
+                    int(match_id),     # int match
+                    0,                 # system (unused when sending to Judoshiai)
+                    0,                 # int blue_points
+                    0,                 # int white_points
+                ]
+            }
 
         msg_json = json.dumps(msg)
         print(msg)

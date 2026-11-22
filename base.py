@@ -427,37 +427,47 @@ class MatchApp:
 
     def convert_and_simplify_score(self, score_string):
         # convert to format used by judoshiai (hex values represent IWYKS)
-        if score_string == "10":
-            return 0x10000
-        elif score_string == "7":
-            return 0x01000
-        elif score_string == "5":
-            return 0x00100
-        elif score_string == "3":
-            return 0x00010
-        elif score_string == "1":
-            return 0x00001
-        else:
-            return 0x00000
+        # Hantei is handled outside of this score
+        score_raw = 0x00000
+        vote_raw = 0
+
+        if score_string == "10":  # Ippon
+            score_raw = 0x10000
+        elif score_string == "7":  # Waza-ari
+            score_raw = 0x01000
+        elif score_string == "5":  # Yuko
+            score_raw = 0x00100
+        elif score_string == "3":  # Koka
+            score_raw = 0x00010
+        elif score_string == "1":  # Hantei
+            vote_raw = 1
+
+        return score_raw, vote_raw
 
     def update_points(
         self,
         category_id: str,
         match: Match,
         is_blue: bool,
-        refresh: Callable[[Any], Awaitable[None]]
+        refresh: Callable[[Any], Awaitable[None]],
     ) -> Callable[[Any], None]:
         async def update_db_points(e):
-            score = self.convert_and_simplify_score(match.get_points(is_blue))
-            if score == 0:
+            score, vote = self.convert_and_simplify_score(match.get_points(is_blue))
+            if score == 0 and vote == 0:
                 return
             if is_blue:
                 self.jsc.set_match_result(
-                    category_id, match.get_match_number(), blue_score=score, white_score=0x0
+                    category_id,
+                    match.get_match_number(),
+                    blue_score=score,
+                    blue_vote=vote,
                 )
             else:
                 self.jsc.set_match_result(
-                    category_id, match.get_match_number(), blue_score=0x0, white_score=score
+                    category_id,
+                    match.get_match_number(),
+                    white_score=score,
+                    white_vote=vote,
                 )
             await refresh(None)
 
