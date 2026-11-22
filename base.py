@@ -112,7 +112,7 @@ class MatchApp:
         columns = {}
 
         for cat in categories:
-            color = self.get_match_color(cat)
+            color = self.get_category_color(cat)
             item = ft.Container(
                 content=ft.Text(cat[1], size=30),
                 col={"sm": 6, "md": 4, "xl": 2},
@@ -160,7 +160,7 @@ class MatchApp:
         )
         self.page.views.append(view)
 
-    def get_match_color(self, cat):
+    def get_category_color(self, cat):
         print(f"{cat=}")
         if cat[4] != "0" and cat[5] == "0":  # system defined and not match unmatched
             return ft.Colors.GREEN
