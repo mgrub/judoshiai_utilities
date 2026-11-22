@@ -6,7 +6,6 @@ import flet_core as ftc
 
 from base import MatchApp
 
-
 # setup CLI
 # some defaults for argparse interface
 cwd = os.getcwd()

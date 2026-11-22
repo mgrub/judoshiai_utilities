@@ -109,6 +109,32 @@ class JudoShiaiConnector_WEB:
         """
         return await self.select_cmd(cmd)
 
+    async def get_categories_extended_info(self):
+        cmd = """
+        SELECT categories."index", category, (
+                SELECT COUNT(*) FROM "main"."matches" WHERE category == categories."index"
+            ) AS match_count, (
+                SELECT COUNT(*) FROM "main"."matches" WHERE
+                    category == categories."index" AND (
+                        (deleted & 1) == 0 AND
+                        blue >= 9 AND
+                        white >= 9 AND
+                        (blue_points != 0 OR white_points != 0)
+                    )
+            ) AS count_matched_matches, system, (
+                SELECT COUNT(*) FROM "main"."matches" WHERE
+                    category == categories."index" AND (
+                        (deleted & 1) == 0 AND
+                        blue >= 9 AND
+                        white >= 9 AND
+                        blue_points == 0 AND
+                        white_points == 0
+                    )
+            ) AS count_open_matches
+        FROM categories ;
+        """
+        return await self.select_cmd(cmd)
+
     async def get_category_info(self, cid):
         cmd = f"""
         SELECT category, numcomp, pos1, pos2, pos3, pos4
@@ -133,50 +159,65 @@ class JudoShiaiConnector_WEB:
         """
         return await self.select_cmd(cmd)
 
-    async def get_competitor_info(self, cid):
+    async def get_competitors_info(self, cids: set[str]):
         cmd = f"""
-        SELECT last, first, club, birthyear, country
+        SELECT "index", last, first, club, birthyear, country
         FROM "main"."competitors"
-        WHERE "index" == {cid} ;
+        WHERE "index" IN ("{"\", \"".join(cids)}") ;
         """
-        
-        if cid == "0":
-            return ["unknown", "", "", "", ""]
-        elif cid == "1":
-            return ["empty", "", "", "", ""]
-        else:
-            return (await self.select_cmd(cmd))[0]
+        comps = await self.select_cmd(cmd)
+        if "0" in cids:
+            comps.append(["0", "unknown", "", "", "", ""])
+        if "1" in cids:
+            comps.append(["1", "empty", "", "", "", ""])
+        return comps
 
     async def get_matches(self, category_id):
         cmd = f"""
-        SELECT category, number, blue_points, white_points
+        SELECT number, blue, white, blue_points, white_points
         FROM "main"."matches" 
         WHERE category == {category_id} ;
         """
         return await self.select_cmd(cmd)
 
-    def set_match_result(self, category_id, match_id, blue_score, white_score):
-        
-        msg = {
-            "msg": [
-                5,                 # src_ip_addr, is mostly "5"
-                2,                 # type MSG_RESULT
-                1,                 # sender
-                7777,              # begin sublist ???
-                0,                 # int tatami
-                int(category_id),  # int category
-                int(match_id),     # int match
-                0,                 # int minutes
-                int(blue_score),   # int blue_score (long int of hex IWYKS)
-                int(white_score),  # int white_score (long int of hex IWYKS)
-                0,                 # char blue_vote
-                0,                 # char white_vote
-                0,                 # char blue_hansokumake
-                0,                 # char white_hansokumake
-                0,                 # int legend
-                0,                 # end sublist ???
-            ]
-        }
+    def set_match_result(self, category_id, match_id, blue_score=0x0, white_score=0x0, blue_vote=0, white_vote=0):
+
+        if not blue_score == white_score == blue_vote == white_vote == 0: 
+            # use MSG_RESULT for setting winner
+            msg = {
+                "msg": [
+                    5,                 # src_ip_addr, is mostly "5"
+                    2,                 # type MSG_RESULT
+                    1,                 # length (unused when sending to Judoshiai)
+                    7777,              # sender
+                    0,                 # int tatami
+                    int(category_id),  # int category
+                    int(match_id),     # int match
+                    0,                 # int minutes
+                    int(blue_score),   # int blue_score (long int of hex IWYKS)
+                    int(white_score),  # int white_score (long int of hex IWYKS)
+                    blue_vote,         # char blue_vote
+                    white_vote,        # char white_vote
+                    0,                 # char blue_hansokumake
+                    0,                 # char white_hansokumake
+                    0,                 # int legend
+                ]
+            }
+        else:
+            # use MSG_SET_POINTS to reset match
+            msg = {
+                "msg": [
+                    5,                 # src_ip_addr, is mostly "5"
+                    5,                 # type MSG_SET_POINTS
+                    1,                 # length (unused when sending to Judoshiai)
+                    7777,              # sender
+                    int(category_id),  # int category
+                    int(match_id),     # int match
+                    0,                 # system (unused when sending to Judoshiai)
+                    0,                 # int blue_points
+                    0,                 # int white_points
+                ]
+            }
 
         msg_json = json.dumps(msg)
         print(msg)
@@ -185,10 +226,12 @@ class JudoShiaiConnector_WEB:
         ws.connect(f"ws://{self.host}:{self.port_ws}")
         ws.send(msg_json)
 
-        msg_ack = json.loads(ws.recv())
-        if msg_ack["msg"][1] != 3:
-            print(msg_ack)
-            print("Did not receive MSG_ACK  ")
+        if not blue_score == white_score == 0:
+            # for some reason MSG_ACK is not send if message type is MSG_SET_POINTS
+            msg_ack = json.loads(ws.recv())
+            if msg_ack["msg"][1] != 3:
+                print(msg_ack)
+                print("Did not receive MSG_ACK  ")
         ws.close()
 
 
@@ -202,5 +245,5 @@ if __name__ == "__main__":
     jsc_online = JudoShiaiConnector_WEB()
     print(jsc_online.get_categories())
     print(jsc_online.get_matches(10014))
-    print(jsc_online.get_competitor_info(29))
+    print(jsc_online.get_competitors_info({29}))
     #jsc_online.set_match_result(10014, 1, 0x10000, 0x01000) 

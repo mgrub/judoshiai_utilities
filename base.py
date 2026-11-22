@@ -3,10 +3,12 @@ import os
 import pathlib
 import subprocess
 import sys
+from typing import Any, Awaitable, Callable
 
 import flet as ft
 
 from dbutils import JudoShiaiConnector_WEB
+from ui_utils.match_ui_element import Match
 
 
 class MatchApp:
@@ -18,10 +20,6 @@ class MatchApp:
         # init
         self.page = page
         self.page.title = "JudoShiai Match Result GUI"
-
-        # cache
-        self.matches = {}
-        self.competitors = {}
 
         # layout and style
         self.page.theme_mode = ft.ThemeMode.LIGHT
@@ -85,13 +83,36 @@ class MatchApp:
     async def set_overview_view(self):
         self.solution_found = []
 
-        categories = await self.jsc.get_categories()
+        categories = await self.jsc.get_categories_extended_info()
+        # category status is int with binary meaning:
+        # bit with val 1: MATCH_EXISTS       -> TRUE <=> Es gibt ein Match von category.
+        # bit with val 2: MATCH_MATCHED      -> True <=>
+        # Es gibt ein Match m von category, für das gilt:
+        #     (m.deleted & DELETED) == 0 &&                             <- DELETED = 0x01
+        #     (m.blue_points != 0 || m.white_points != 0) &&
+        #     m.blue >= COMPETITOR &&                                   <- COMPETITOR = 9
+        #     m.white >= COMPETITOR
+        # bit with val 4: MATCH_UNMATCHED    -> True <=>
+        # Es gibt ein Match m von category, für das gilt:
+        #     (m.deleted & DELETED) == 0 &&                             <- DELETED = 0x01
+        #     m.blue >= COMPETITOR &&                                   <- COMPETITOR = 9
+        #     m.white >= COMPETITOR &&
+        #     m.blue_points == 0 &&
+        #     m.white_points == 0 &&
+        #     (avl_get_competitor_status(m.blue) & HANSOKUMAKE) == 0 && <- HANSOKUMAKE = 0x02
+        #     (avl_get_competitor_status(m.white) & HANSOKUMAKE) == 0
+        # bit with val 8: ?
+        # bit with val 16: REAL_MATCH_EXISTS
+        # bit with val 32: SYSTEM_DEFINED    -> True <=> category.system != 0
+        #
+        # category completed if SYSTEM_DEFINED AND NOT MATCH_UNMATCHED
+        # category started if MATCH_MATCHED
+        # category drawn if MATCH_EXISTS
 
-        columns = []
+        columns = {}
 
         for cat in categories:
-            is_finished = self.check_status(cat)
-            color = ft.Colors.LIGHT_BLUE_100 if is_finished else ft.Colors.WHITE
+            color = self.get_category_color(cat)
             item = ft.Container(
                 content=ft.Text(cat[1], size=30),
                 col={"sm": 6, "md": 4, "xl": 2},
@@ -105,42 +126,66 @@ class MatchApp:
                 border_radius=10,
             )
 
-            columns.append(item)
+            abstract_cat = cat[1][
+                : cat[1].rfind("-") if cat[1].rfind("-") != -1 else cat[1].rfind("+")
+            ]
+            columns.setdefault(abstract_cat, []).append(item)
 
         # create rows
-        resprows = ft.ResponsiveRow(columns)
+        resprows = []
+        for abstract_cat, cols in columns.items():
+            resprows.append(ft.Divider())
+            row = ft.ResponsiveRow(cols)
 
-        view_elements = [self.appbar, resprows]
+            def construct_close_open(row):
+                def close_open(e):
+                    row.visible = not row.visible
+                    self.page.update()
+
+                return close_open
+
+            button = ft.Button("hide / show", on_click=construct_close_open(row))
+            resprows.append(ft.Row([ft.Text(abstract_cat, size=30), button]))
+            resprows.append(row)
+        resprows.append(ft.Divider())
+
+        async def reload(e):
+            self.page.views.clear()
+            await self.set_overview_view()
+
+        refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, on_click=reload)
+
+        view_elements = [self.appbar, refresh_button, *resprows]
 
         view = ft.View(
             controls=view_elements,
             route="/",
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.START,
             scroll=ft.ScrollMode.AUTO,
         )
         self.page.views.append(view)
 
-    def check_status(self, cat):
+    def get_category_color(self, cat):
         print(f"{cat=}")
-        numcomp = int(cat[2])
-        pos = cat[3 : 3 + numcomp]
-
-        if numcomp > 0:
-            is_finished = False if 0 in pos else True
-        else:
-            is_finished = False
-
-        return is_finished
+        if cat[4] != "0" and cat[5] == "0":  # system defined and not match unmatched
+            return ft.Colors.GREEN
+        if cat[3] != "0":  # match_matched
+            return ft.Colors.ORANGE
+        if cat[2] != "0":  # match_exists
+            return ft.Colors.YELLOW
+        return ft.Colors.GREY
 
     async def set_category_view(self, cid):
-
+        cat_label = (await self.jsc.get_category_info(cid))[0]
         matches = await self.jsc.get_matches(cid)
-        cat_info = await self.jsc.get_category_info(cid)
-        rows = []
+        rows = await self.match_items(cid, matches)
 
-        for match in matches:
-            mi = await self.match_item(match)
-            rows.append(mi)
+        async def reload(e):
+            # hard reload
+            self.page.views.clear()
+            await self.set_category_view(cid)
+
+        refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, on_click=reload)
 
         back_button = ft.Button(
             content="Back",
@@ -152,7 +197,7 @@ class MatchApp:
         reset_matches_button = ft.Button(
             content="CLEAR ALL MATCHES",
             icon=ft.Icons.WARNING,
-            on_click=self.reset_matches(matches),
+            on_click=self.reset_matches(cid, [match[0] for match in matches]),
             color=ft.Colors.RED,
             elevation=1,
         )
@@ -160,11 +205,11 @@ class MatchApp:
         view = ft.View(
             controls=[
                 self.appbar,
-                back_button,
-                ft.Text(cat_info[0], size=40),
+                ft.Row([back_button, refresh_button]),
+                ft.Text(cat_label, size=40),
                 *rows,
                 ft.Row(
-                    [back_button, reset_matches_button],
+                    [back_button, refresh_button, reset_matches_button],
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 ),
             ],
@@ -181,7 +226,9 @@ class MatchApp:
         cmd_template = "{PYTHON} {SCRIPT} {OPTIONS}"
 
         ### show category results
-        results_script = pathlib.Path.joinpath(pathlib.Path(shiai_utils_path), "result_summary.py")
+        results_script = pathlib.Path.joinpath(
+            pathlib.Path(shiai_utils_path), "result_summary.py"
+        )
         patterns = [
             ".*",
             "Men|Women",
@@ -192,8 +239,12 @@ class MatchApp:
         for p in patterns:
 
             # set specific details of subprocess call
-            options =  '--results-directory results/ --cat-pattern "{PATTERN}"'.format(PATTERN=p)
-            cmd = cmd_template.format(PYTHON=python_path, SCRIPT=results_script, OPTIONS=options)
+            options = '--results-directory results/ --cat-pattern "{PATTERN}"'.format(
+                PATTERN=p
+            )
+            cmd = cmd_template.format(
+                PYTHON=python_path, SCRIPT=results_script, OPTIONS=options
+            )
 
             # create button with script callback
             print(cmd)
@@ -207,7 +258,9 @@ class MatchApp:
 
         ### show group results
         options = "--results-directory results/ --no-cat-results --group-results --group-cert-template urkunde/urkunde_template.svg"
-        cmd = cmd_template.format(PYTHON=python_path, SCRIPT=results_script, OPTIONS=options)
+        cmd = cmd_template.format(
+            PYTHON=python_path, SCRIPT=results_script, OPTIONS=options
+        )
 
         button = ft.Button(
             content=f"Group results",
@@ -218,8 +271,12 @@ class MatchApp:
         buttons.append(button)
 
         ### show medal needs
-        medal_needs_script = pathlib.Path.joinpath(pathlib.Path(shiai_utils_path), "medal_needs.py")
-        cmd = cmd_template.format(PYTHON=python_path, SCRIPT=medal_needs_script, OPTIONS="")
+        medal_needs_script = pathlib.Path.joinpath(
+            pathlib.Path(shiai_utils_path), "medal_needs.py"
+        )
+        cmd = cmd_template.format(
+            PYTHON=python_path, SCRIPT=medal_needs_script, OPTIONS=""
+        )
 
         button = ft.Button(
             content=f"Medal needs",
@@ -229,9 +286,30 @@ class MatchApp:
         )
         buttons.append(button)
 
+        input_field = ft.TextField(hint_text="regex for categories")
+
+        def generate_report(e):
+            pat = input_field.value
+            options = '--results-directory results/ --cat-pattern "{PATTERN}"'.format(
+                PATTERN=pat
+            )
+            cmd = cmd_template.format(
+                PYTHON=python_path, SCRIPT=results_script, OPTIONS=options
+            )
+            self.run_python_in_cwd(cmd, pipe_to="kate -i")(e)
+
+        submit_button = ft.Button(
+            content=f"Submit regex for cat results",
+            on_click=generate_report,
+            icon=ft.Icons.LIST,
+            elevation=1,
+        )
+
         # build page view
-        info_text = ft.Text(value="Please first export the results from JUDOSHIAI to json!")
-        content = ft.Column(controls=buttons)
+        info_text = ft.Text(
+            value="Please first export the results from JUDOSHIAI to json!"
+        )
+        content = ft.Column(controls=[*buttons, ft.Row([input_field, submit_button])])
         view_elements = [self.appbar, info_text, content]
         view = ft.View(controls=view_elements, route="/settings")
         self.page.views.append(view)
@@ -263,13 +341,13 @@ class MatchApp:
         view = ft.View(controls=view_elements, route="/settings")
         self.page.views.append(view)
 
-    def reset_matches(self, matches):
+    def reset_matches(self, cat_id, match_numbers):
 
-        def reset_cat_matches(e):
-            for m in matches:
-                category_id = m[0]
-                match_id = m[1]
-                self.reset_points(category_id, match_id)
+        async def reset_cat_matches(e):
+            for match_id in sorted(match_numbers, reverse=True):
+                self.reset_points(cat_id, match_id)
+            self.page.views.clear()
+            await self.set_category_view(cat_id)
 
         return reset_cat_matches
 
@@ -288,7 +366,7 @@ class MatchApp:
     def open_home(self):
         call = lambda e: asyncio.create_task(self.page.push_route("/"))
         return call
-    
+
     def open_reports(self):
         call = lambda e: asyncio.create_task(self.page.push_route("/reports"))
         return call
@@ -305,183 +383,123 @@ class MatchApp:
         e.control.bgcolor = ft.Colors.LIGHT_BLUE_50 if e.data == "true" else ""
         e.control.update()
 
-    async def refresh_match_item(self, match):
-        cat_id = match[0]
-        match_number = match[1]
+    def update_match_items(self, cat_id, items: list[Match]):
+        async def update_function(e):
+            # get all matches from judoshiai
+            matches = await self.jsc.get_matches(cat_id)
+            matches = {match: match_info for match, *match_info in matches}
+            # if the matches changed too much, reload completely
+            if {*matches.keys()} != {item.get_match_number() for item in items}:
+                self.page.views.clear()
+                await self.set_category_view(cat_id)
+                return
 
-        # retrieve match informations
-        match_info = await self.jsc.get_match_info(cat_id, match_number)
-        if cat_id in self.matches.keys():
-            self.matches[cat_id][match_number] = match_info
-        else:
-            self.matches[cat_id] = {match_number: match_info}
-
-        # update info about competitor blue
-        blue_info = await self.jsc.get_competitor_info(match_info[0])
-        self.competitors[match_info[0]] = blue_info
-
-        # update info about competitor white
-        white_info = await self.jsc.get_competitor_info(match_info[1])
-        self.competitors[match_info[1]] = white_info
-
-        return match_info, blue_info, white_info
-
-    async def match_item(self, match):
-
-        cat_id = match[0]
-        match_number = match[1]
-
-        if (
-            cat_id in self.matches.keys()
-            and match_number in self.matches[cat_id].keys()
-        ):
-            match_info = self.matches[cat_id][match_number]
-            blue_info = self.competitors[match_info[0]]
-            white_info = self.competitors[match_info[1]]
-        else:
-            match_info, blue_info, white_info = await self.refresh_match_item(match)
-
-        async def refresh_callback(e):
-            # this is a bit quick'n'dirty, but at least it works :-)
-            match_info, blue_info, white_info = await self.refresh_match_item(match)
-
-            blue_box.content.controls[0].value = f"{blue_info[1]} {blue_info[0]}"
-            blue_box.content.controls[1].value = f"({blue_info[2]})"
-
-            white_box.content.controls[0].value = f"{white_info[1]} {white_info[0]}"
-            white_box.content.controls[1].value = f"({white_info[2]})"
-
+            # get all competitors of the new matches
+            comp_ids = {match[i] for match in matches.values() for i in (0, 1)}
+            comps = {
+                comp[0]: comp[1:]
+                for comp in await self.jsc.get_competitors_info(comp_ids)
+            }
+            # update all match info displayed
+            for item in items:
+                match_number = item.get_match_number()
+                b_info = comps[matches[match_number][0]]
+                w_info = comps[matches[match_number][1]]
+                b_points = matches[match_number][2]
+                w_points = matches[match_number][3]
+                item.update_comp(b_info[1], b_info[0], b_info[2], True)
+                item.update_comp(w_info[1], w_info[0], w_info[2], False)
+                item.update_points(b_points, True)
+                item.update_points(w_points, False)
             self.page.update()
 
-        refresh_button = ft.IconButton(icon=ft.Icons.REFRESH, on_click=refresh_callback)
-        blue_box = self.competitor_box(blue_info, color=ft.Colors.WHITE)
-        blue_points = self.match_result_radiogroup(
-            cat_id, match_number, match_info, is_blue=True
-        )
+        return update_function
 
-        white_box = self.competitor_box(white_info, color=ft.Colors.BLUE_300)
-        white_points = self.match_result_radiogroup(
-            cat_id, match_number, match_info, is_blue=False
-        )
+    async def match_items(self, cat_id, matches):
+        # get all competitors for the matches
+        comp_ids = {match[i] for match in matches for i in (1, 2)}
+        comps = {
+            comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)
+        }
 
-        opacity = 1.0
-        if blue_info[0] == "empty" or white_info[0] == "empty":
-            opacity = 0.3
+        # add a Match element to the UI for every match
+        match_items: list[Match] = []
+        for match_number, *match_info in matches:
+            blue_info = comps[match_info[0]]
+            white_info = comps[match_info[1]]
 
-        content = [
-            ft.Container(
-                content=ft.Column([ft.Text(match[1], size=22), refresh_button]),
-                col={"sm": 12, "md": 1, "xxl": 0.5},
-                opacity=opacity,
-            ),
-            ft.Container(
-                content=ft.Row([blue_box, blue_points]),
-                col={"sm": 12, "md": 10, "xxl": 5},
-                opacity=opacity,
-            ),
-            ft.Container(
-                content=ft.Row([white_box, white_points]),
-                col={"sm": 12, "md": 10, "xxl": 5},
-                opacity=opacity,
-            ),
-            ft.Divider(),
-        ]
+            match_items.append(
+                Match(
+                    match_number,
+                    blue_info[1],
+                    blue_info[0],
+                    blue_info[2],
+                    match_info[2],
+                    white_info[1],
+                    white_info[0],
+                    white_info[2],
+                    match_info[3],
+                )
+            )
 
-        item = ft.ResponsiveRow(controls=content, alignment=ft.MainAxisAlignment.END)
+        # set refresh function and the on change functions for the Match objects
+        update_function = self.update_match_items(cat_id, match_items)
+        for match in match_items:
+            match.set_refresh_function(update_function)
+            match.set_on_change_function(
+                self.update_points(cat_id, match, True, update_function), True
+            )
+            match.set_on_change_function(
+                self.update_points(cat_id, match, False, update_function), False
+            )
 
-        return item
-
-    def competitor_box(self, info, color=ft.Colors.BLUE_300):
-        # if you change something here, please also check `refresh_callback`
-
-        name = f"{info[1]} {info[0]}"
-        club = f"({info[2]})"
-
-        box = ft.Container(
-            content=ft.Column([ft.Text(name, size=30), ft.Text(club, size=22)]),
-            border=ft.border.Border().all(1, ft.Colors.GREY_300),
-            margin=10,
-            padding=10,
-            alignment=ft.alignment.Alignment.CENTER_LEFT,
-            bgcolor=color,
-            height=100,
-            border_radius=10,
-            expand=3,
-        )
-
-        return box
-
-    def match_result_radiogroup(self, cat_id, match_number, match_info, is_blue=True):
-
-        if is_blue:
-            init_value = match_info[2]
-        else:
-            init_value = match_info[3]
-
-        on_change = self.update_points(cat_id, match_number, is_blue)
-
-        radio_group = ft.RadioGroup(
-            ft.Row(
-                [
-                    ft.Column(
-                        [ft.Text("0"), ft.Radio(value="0", label="")],
-                        alignment=ft.alignment.Alignment.CENTER,
-                    ),
-                    ft.Column(
-                        [ft.Text("1"), ft.Radio(value="1", label="")],
-                        alignment=ft.alignment.Alignment.CENTER,
-                    ),
-                    ft.Column(
-                        [ft.Text("5"), ft.Radio(value="5", label="")],
-                        alignment=ft.alignment.Alignment.CENTER,
-                    ),
-                    ft.Column(
-                        [ft.Text("7"), ft.Radio(value="7", label="")],
-                        alignment=ft.alignment.Alignment.CENTER,
-                    ),
-                    ft.Column(
-                        [ft.Text("10"), ft.Radio(value="10", label="")],
-                        alignment=ft.alignment.Alignment.CENTER,
-                    ),
-                ]
-            ),
-            value=init_value,
-            on_change=on_change,
-        )
-
-        radio_container = ft.Container(
-            content=radio_group,
-            expand=1,
-        )
-        return radio_container
+        return match_items
 
     def convert_and_simplify_score(self, score_string):
-        # convert to format used by judoshiai (hex values represent IWYKH?)
-        if score_string == "10":
-            return 0x10000
-        elif score_string == "7":
-            return 0x01000
-        elif score_string == "5":
-            return 0x00100
-        elif score_string == "3":
-            return 0x00010
-        elif score_string == "1":
-            return 0x00001
-        else:
-            return 0x00000
+        # convert to format used by judoshiai (hex values represent IWYKS)
+        # Hantei is handled outside of this score
+        score_raw = 0x00000
+        vote_raw = 0
 
-    def update_points(self, category_id, match_id, is_blue):
-        def update_db_points(e):
-            winner_score = self.convert_and_simplify_score(e.control.value)
+        if score_string == "10":  # Ippon
+            score_raw = 0x10000
+        elif score_string == "7":  # Waza-ari
+            score_raw = 0x01000
+        elif score_string == "5":  # Yuko
+            score_raw = 0x00100
+        elif score_string == "3":  # Koka
+            score_raw = 0x00010
+        elif score_string == "1":  # Hantei
+            vote_raw = 1
+
+        return score_raw, vote_raw
+
+    def update_points(
+        self,
+        category_id: str,
+        match: Match,
+        is_blue: bool,
+        refresh: Callable[[Any], Awaitable[None]],
+    ) -> Callable[[Any], None]:
+        async def update_db_points(e):
+            score, vote = self.convert_and_simplify_score(match.get_points(is_blue))
+            if score == 0 and vote == 0:
+                return
             if is_blue:
                 self.jsc.set_match_result(
-                    category_id, match_id, blue_score=winner_score, white_score=0x0
+                    category_id,
+                    match.get_match_number(),
+                    blue_score=score,
+                    blue_vote=vote,
                 )
             else:
                 self.jsc.set_match_result(
-                    category_id, match_id, blue_score=0x0, white_score=winner_score
+                    category_id,
+                    match.get_match_number(),
+                    white_score=score,
+                    white_vote=vote,
                 )
-            # e.page.update()
+            await refresh(None)
 
         return update_db_points
 
@@ -490,21 +508,17 @@ class MatchApp:
             category_id, match_id, blue_score=0x0, white_score=0x0
         )
 
-    def reset_cache(self, e):
-        self.matches = {}
-        self.competitors = {}
-
     def run_python_in_cwd(self, cmd, pipe_to=None, open_file=""):
         if pipe_to:
             cmd = cmd + f" | {pipe_to}"
-        
+
         def runner(e):
             print(cmd)
 
             result = subprocess.run(
                 cmd,
-                shell=True, 
-                cwd=os.getcwd()
+                shell=True,
+                cwd=os.getcwd(),
             )
 
             print("STDOUT:", result.stdout)
@@ -513,9 +527,9 @@ class MatchApp:
             if open_file:
                 result = subprocess.run(
                     f"kate {open_file}",
-                    shell=True, 
+                    shell=True,
                     capture_output=False,
-                    cwd=os.getcwd()
+                    cwd=os.getcwd(),
                 )
 
         return runner
