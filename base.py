@@ -126,7 +126,9 @@ class MatchApp:
                 border_radius=10,
             )
 
-            abstract_cat = cat[1][:cat[1].rfind("-") if cat[1].rfind("-") != -1 else cat[1].rfind("+")]
+            abstract_cat = cat[1][
+                : cat[1].rfind("-") if cat[1].rfind("-") != -1 else cat[1].rfind("+")
+            ]
             columns.setdefault(abstract_cat, []).append(item)
 
         # create rows
@@ -134,12 +136,15 @@ class MatchApp:
         for abstract_cat, cols in columns.items():
             resprows.append(ft.Divider())
             row = ft.ResponsiveRow(cols)
+
             def construct_close_open(row):
                 def close_open(e):
                     row.visible = not row.visible
                     self.page.update()
+
                 return close_open
-            button = ft.Button("hide/ show", on_click=construct_close_open(row))
+
+            button = ft.Button("hide / show", on_click=construct_close_open(row))
             resprows.append(ft.Row([ft.Text(abstract_cat, size=30), button]))
             resprows.append(row)
         resprows.append(ft.Divider())
@@ -221,7 +226,9 @@ class MatchApp:
         cmd_template = "{PYTHON} {SCRIPT} {OPTIONS}"
 
         ### show category results
-        results_script = pathlib.Path.joinpath(pathlib.Path(shiai_utils_path), "result_summary.py")
+        results_script = pathlib.Path.joinpath(
+            pathlib.Path(shiai_utils_path), "result_summary.py"
+        )
         patterns = [
             ".*",
             "Men|Women",
@@ -232,8 +239,12 @@ class MatchApp:
         for p in patterns:
 
             # set specific details of subprocess call
-            options =  '--results-directory results/ --cat-pattern "{PATTERN}"'.format(PATTERN=p)
-            cmd = cmd_template.format(PYTHON=python_path, SCRIPT=results_script, OPTIONS=options)
+            options = '--results-directory results/ --cat-pattern "{PATTERN}"'.format(
+                PATTERN=p
+            )
+            cmd = cmd_template.format(
+                PYTHON=python_path, SCRIPT=results_script, OPTIONS=options
+            )
 
             # create button with script callback
             print(cmd)
@@ -247,7 +258,9 @@ class MatchApp:
 
         ### show group results
         options = "--results-directory results/ --no-cat-results --group-results --group-cert-template urkunde/urkunde_template.svg"
-        cmd = cmd_template.format(PYTHON=python_path, SCRIPT=results_script, OPTIONS=options)
+        cmd = cmd_template.format(
+            PYTHON=python_path, SCRIPT=results_script, OPTIONS=options
+        )
 
         button = ft.Button(
             content=f"Group results",
@@ -258,8 +271,12 @@ class MatchApp:
         buttons.append(button)
 
         ### show medal needs
-        medal_needs_script = pathlib.Path.joinpath(pathlib.Path(shiai_utils_path), "medal_needs.py")
-        cmd = cmd_template.format(PYTHON=python_path, SCRIPT=medal_needs_script, OPTIONS="")
+        medal_needs_script = pathlib.Path.joinpath(
+            pathlib.Path(shiai_utils_path), "medal_needs.py"
+        )
+        cmd = cmd_template.format(
+            PYTHON=python_path, SCRIPT=medal_needs_script, OPTIONS=""
+        )
 
         button = ft.Button(
             content=f"Medal needs",
@@ -270,11 +287,17 @@ class MatchApp:
         buttons.append(button)
 
         input_field = ft.TextField(hint_text="regex for categories")
+
         def generate_report(e):
             pat = input_field.value
-            options =  '--results-directory results/ --cat-pattern "{PATTERN}"'.format(PATTERN=pat)
-            cmd = cmd_template.format(PYTHON=python_path, SCRIPT=results_script, OPTIONS=options)
+            options = '--results-directory results/ --cat-pattern "{PATTERN}"'.format(
+                PATTERN=pat
+            )
+            cmd = cmd_template.format(
+                PYTHON=python_path, SCRIPT=results_script, OPTIONS=options
+            )
             self.run_python_in_cwd(cmd, pipe_to="kate -i")(e)
+
         submit_button = ft.Button(
             content=f"Submit regex for cat results",
             on_click=generate_report,
@@ -283,7 +306,9 @@ class MatchApp:
         )
 
         # build page view
-        info_text = ft.Text(value="Please first export the results from JUDOSHIAI to json!")
+        info_text = ft.Text(
+            value="Please first export the results from JUDOSHIAI to json!"
+        )
         content = ft.Column(controls=[*buttons, ft.Row([input_field, submit_button])])
         view_elements = [self.appbar, info_text, content]
         view = ft.View(controls=view_elements, route="/settings")
@@ -319,7 +344,7 @@ class MatchApp:
     def reset_matches(self, cat_id, match_numbers):
 
         async def reset_cat_matches(e):
-            for match_id in sorted(match_numbers,reverse=True):
+            for match_id in sorted(match_numbers, reverse=True):
                 self.reset_points(cat_id, match_id)
             self.page.views.clear()
             await self.set_category_view(cat_id)
@@ -341,7 +366,7 @@ class MatchApp:
     def open_home(self):
         call = lambda e: asyncio.create_task(self.page.push_route("/"))
         return call
-    
+
     def open_reports(self):
         call = lambda e: asyncio.create_task(self.page.push_route("/reports"))
         return call
@@ -371,7 +396,10 @@ class MatchApp:
 
             # get all competitors of the new matches
             comp_ids = {match[i] for match in matches.values() for i in (0, 1)}
-            comps = {comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)}
+            comps = {
+                comp[0]: comp[1:]
+                for comp in await self.jsc.get_competitors_info(comp_ids)
+            }
             # update all match info displayed
             for item in items:
                 match_number = item.get_match_number()
@@ -390,7 +418,9 @@ class MatchApp:
     async def match_items(self, cat_id, matches):
         # get all competitors for the matches
         comp_ids = {match[i] for match in matches for i in (1, 2)}
-        comps = {comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)}
+        comps = {
+            comp[0]: comp[1:] for comp in await self.jsc.get_competitors_info(comp_ids)
+        }
 
         # add a Match element to the UI for every match
         match_items: list[Match] = []
@@ -398,29 +428,29 @@ class MatchApp:
             blue_info = comps[match_info[0]]
             white_info = comps[match_info[1]]
 
-            match_items.append(Match(
-                match_number,
-                blue_info[1],
-                blue_info[0],
-                blue_info[2],
-                match_info[2],
-                white_info[1],
-                white_info[0],
-                white_info[2],
-                match_info[3]
-            ))
+            match_items.append(
+                Match(
+                    match_number,
+                    blue_info[1],
+                    blue_info[0],
+                    blue_info[2],
+                    match_info[2],
+                    white_info[1],
+                    white_info[0],
+                    white_info[2],
+                    match_info[3],
+                )
+            )
 
         # set refresh function and the on change functions for the Match objects
         update_function = self.update_match_items(cat_id, match_items)
         for match in match_items:
             match.set_refresh_function(update_function)
             match.set_on_change_function(
-                self.update_points(cat_id, match, True, update_function),
-                True
+                self.update_points(cat_id, match, True, update_function), True
             )
             match.set_on_change_function(
-                self.update_points(cat_id, match, False, update_function),
-                False
+                self.update_points(cat_id, match, False, update_function), False
             )
 
         return match_items
@@ -481,14 +511,14 @@ class MatchApp:
     def run_python_in_cwd(self, cmd, pipe_to=None, open_file=""):
         if pipe_to:
             cmd = cmd + f" | {pipe_to}"
-        
+
         def runner(e):
             print(cmd)
 
             result = subprocess.run(
                 cmd,
-                shell=True, 
-                cwd=os.getcwd()
+                shell=True,
+                cwd=os.getcwd(),
             )
 
             print("STDOUT:", result.stdout)
@@ -497,9 +527,9 @@ class MatchApp:
             if open_file:
                 result = subprocess.run(
                     f"kate {open_file}",
-                    shell=True, 
+                    shell=True,
                     capture_output=False,
-                    cwd=os.getcwd()
+                    cwd=os.getcwd(),
                 )
 
         return runner
