@@ -67,6 +67,8 @@ class JudoShiaiConnector_SQLITE:
         coachid,
     ):
 
+        club = club.replace("'", "''")  # quick'n'dirty fix for SQL character escaping
+        
         cmd = f"""
             INSERT INTO "main"."competitors" ("index", "last", "first", "birthyear", "belt", "club", "regcategory", "weight", "visible", "category", "deleted", "country", "id", "seeding", "clubseeding", "comment", "coachid")
             VALUES ('{index}', '{last}', '{first}', '{birthyear}', '{belt}', '{club}', '{regcategory}', '{weight}', '{visible}', '{category}', '{deleted}', '{country}', '{id}', '{seeding}', '{clubseeding}', '{comment}', '{coachid}');
