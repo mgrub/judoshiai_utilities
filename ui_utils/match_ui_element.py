@@ -61,7 +61,7 @@ class Match(ft.ResponsiveRow):
             ),
             ft.Divider(),
         ]
-        super().__init__(controls=content, alignment=ft.MainAxisAlignment.END)
+        super().__init__(controls=content, alignment=ft.MainAxisAlignment.START)
 
     def _empty_comp_box(self, is_blue: bool) -> tuple[ft.Text, ft.Text, ft.Container]:
         """
