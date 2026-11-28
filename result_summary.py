@@ -85,7 +85,7 @@ class ResultUtils:
         # calculate rating
         points_by_club = []
         for club, club_pos in pos_by_club.items():
-            if True:
+            if clubsizes[club] >= 3:
                 points = [self.pos_to_point(pos) for pos in club_pos]
                 point_sum = sum(points)
                 points_by_club.append((club, point_sum))
@@ -99,19 +99,18 @@ class ResultUtils:
             place = 1
             for i, (club, points) in enumerate(points_by_club):
 
-                if clubsizes[club] >= 3:
-                    # same points should result in same place, but (e.g.) skip 4th place if we have 2x bronze
-                    if points != prev_points:
-                        place = place+1  # TODO: not correct, but works for now
-                    
-                    print(f"  {place}. {club} ({points} points) (Teamsize: {clubsizes[club]})")
-                    prev_points = points
+                # same points should result in same place, but (e.g.) skip 4th place if we have 2x bronze
+                if points != prev_points:
+                    place = place+1  # TODO: not correct, but works for now
+                
+                print(f"  {place}. {club} ({points} points) (Teamsize: {clubsizes[club]})")
+                prev_points = points
 
-                    if place <= 3:
-                        if place in winners.keys():
-                            winners[place].append((club, points))
-                        else:
-                            winners[place] = [(club, points)]
+                if place <= 3:
+                    if place in winners.keys():
+                        winners[place].append((club, points))
+                    else:
+                        winners[place] = [(club, points)]
         else:
             print("  No points so far in this group.")
         
